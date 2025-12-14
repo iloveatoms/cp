@@ -43,14 +43,15 @@ async def updateUser(request):
 async def createPOST(request):
     data = await request.json()
     data = dict(data)
-    print("POST: ", data)
 
-    if postsdb.getPost(data["postid"])==None:
+    if userdb.getUser(data["userid"])==None:
+        msg = {"user":"not-found"}
+    elif postsdb.getPost(data["postid"])==None:
         postsdb.createPost(**data)
         msg = {"post":"created"}
     else:
         msg = {"post":"exists"}
-        msg = json.dumps(msg)
+    msg = json.dumps(msg)
 
     return web.Response(text=f'{msg}', content_type="application/json")
 

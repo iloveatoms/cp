@@ -92,23 +92,25 @@ app.get(
 
 app.post(
   '/api/complaints',
-  upload.single('image'),
-  async (req: ComplaintRequest, res: Response) => {
+   upload.single('image'),
+   async (req: ComplaintRequest, res: Response) => {
     console.log('BODY:', req.body )
     console.log('FILE:', req.file)
 
     let createPost = {
       "postid": Date.now().toString(),
-      "userid": req.body.aadhaar,
+      "userid": Number(req.body.aadhaar),
       "dateOfCreation": Date.now().toString(),
       "title" : req.body.title,
-      "text": req.body.,
-      "imageUrl" : ?,
-      "meta":,
+      "text": req.body.description,
+      "imageUrl" : "uploads/" + req.file?.filename,
+      "meta": req.body.location + ":" + req.body.category,
       "likes": 0,
       "dislikes":0,
       "credits":0
     }
+
+    console.log(createPost)
 
     //POST to users.db
     const resp = await fetch("http://localhost:9999/post", {
@@ -119,10 +121,15 @@ app.post(
     if (!resp.ok){ res.status(resp.status).json({error: 'Failed;;'}) }
     const data = await resp.json()
 
-    res.status(201).json({
-      message: 'Complaint received successfully from' + req.cookies.sessionID,
+
+      res.status(201).json({
+        message: function(){
+          if(data["user"] == "not-found"){ return "Please Login First."}
+          else if(data["post"] == "created"){ return "Complaint Received."}
+        }()
     })
-  }
+
+   }
 )
 
 

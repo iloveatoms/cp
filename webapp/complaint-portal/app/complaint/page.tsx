@@ -1,25 +1,37 @@
 "use client";
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
+
+
+
+
 export default function ComplaintReportForm() {
   const [formData, setFormData] = useState<{
+    aadhaar: Number,
     image: File | null;
     title: string;
     description: string;
     location: string;
     category: string;
   }>({
+    aadhaar: 0,
     image: null,
     title: "",
     description: "",
     location: "",
     category: "",
   });
+
+  let myUserId;
+    useEffect(() => {
+      const storedUserId = localStorage.getItem("userid");
+      myUserId = storedUserId;
+    }, []);
 
   const [loading, setLoading] = useState(false);
 
@@ -48,15 +60,16 @@ export default function ComplaintReportForm() {
     e.preventDefault();
 
     // validation
+
     if (
       !formData.title ||
       !formData.description ||
       !formData.location ||
       !formData.category
     ) {
-      alert("Please fill all required fields");
-      return;
-    }
+      alert("Please fill all required fields\n" + (!formData.aadhaar ? "Please Login to upload a complaint." : "") ); }
+
+      //TODO: Redirect to Login page if aadhar is not set.
 
     setLoading(true);
 
@@ -65,6 +78,10 @@ export default function ComplaintReportForm() {
     if (formData.image) {
       data.append("image", formData.image);
     }
+
+    //TODO: Show error if userid is not set in localStorage.
+    // and dsiable form filling
+    data.append("aadhaar", formData.aadhaar.toString());
     data.append("title", formData.title);
     data.append("description", formData.description);
     data.append("location", formData.location);
@@ -88,6 +105,7 @@ export default function ComplaintReportForm() {
 
       //Reset form
       setFormData({
+        aadhaar: 0,
         image: null,
         title: "",
         description: "",
@@ -121,7 +139,13 @@ export default function ComplaintReportForm() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-[#2C6E49] font-medium">Upload Image</Label>
+              <Label className="text-[#2C6E49] font-medium">Aadhaar</Label>
+              <Input
+                type="number"
+                name="aadhaar"
+                value={myUserId}
+                className="rounded-2xl border border-[#E1F1E4] bg-white text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
+              />
               <Input
                 type="file"
                 name="image"

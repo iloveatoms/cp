@@ -220,7 +220,7 @@ class Posts:
         self,
         postid: str,
         userid: int,
-        dataOfCreation: str,
+        dateOfCreation: str,
         title: str = '',
         text: str = '',
         imageUrl: str = '',
@@ -236,11 +236,11 @@ class Posts:
         cur.execute(
             """
             INSERT INTO post
-            (postid, userid, dataOfCreation, title, text, imageUrl, meta, likes, dislikes, credits)
+            (postid, userid, dateOfCreation, title, text, imageUrl, meta, likes, dislikes, credits)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                postid, userid, dataOfCreation, title, text, imageUrl,
+                postid, userid, dateOfCreation, title, text, imageUrl,
                 meta, likes, dislikes, credits
             )
         )
@@ -260,7 +260,7 @@ class Posts:
         return {
             "postid": row[0],
             "userid": row[1],
-            "dataOfCreation": row[2],
+            "dateOfCreation": row[2],
             "title": row[3],
             "text": row[4],
             "imageUrl": row[5],
@@ -350,7 +350,7 @@ class Posts:
             {
                 "postid": r[0],
                 "userid": r[1],
-                "dataOfCreation": r[2],
+                "dateOfCreation": r[2],
                 "title": r[3],
                 "text": r[4],
                 "imageUrl": r[5],
