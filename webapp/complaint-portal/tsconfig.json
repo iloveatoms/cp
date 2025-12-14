@@ -7,7 +7,7 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "commonjs",
+    "module": "commonjs",  // esnext -> npm run build, commonjs -> npm run dev
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
