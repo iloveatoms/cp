@@ -1,0 +1,32 @@
+CREATE TABLE user (
+    userid INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT,
+    phone TEXT,
+    aadhar TEXT NOT NULL,
+    age INTEGER,
+    followers TEXT,
+    following TEXT,
+    credits INTEGER DEFAULT 0,
+    dateOfCreation TEXT,
+    profileUrl text,
+    bio text,
+    meta TEXT,
+    sessionid TEXT
+);
+
+CREATE TABLE post (
+    postid TEXT PRIMARY KEY,
+    userid INTEGER,
+    dataOfCreation TEXT,
+    title TEXT,
+    text TEXT,
+    imageUrl TEXT,
+    meta TEXT,
+    likes INTEGER,
+    dislikes INTEGER,
+    credits INTEGER,
+    FOREIGN KEY (userid) REFERENCES user(userid)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);

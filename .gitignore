@@ -1,0 +1,45 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+
+databases/uploads/*.db
+# dependencies
+webapp/complaint-portal/node_modules
+webapp/complaint-portal/.pnp
+webapp/complaint-portal/.pnp.*
+webapp/complaint-portal/.yarn/*
+!webapp/complaint-portal/.yarn/patches
+!webapp/complaint-portal/.yarn/plugins
+!webapp/complaint-portal/.yarn/releases
+!webapp/complaint-portal/.yarn/versions
+
+server/__pycache__
+
+# testing
+webapp/complaint-portal/coverage
+
+# next.js
+webapp/complaint-portal/.next/
+webapp/complaint-portal/out/
+
+# production
+webapp/complaint-portal/build
+
+# misc
+**/.DS_Store
+**/*.pem
+
+# debug
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+**/.env*
+
+# vercel
+**/.vercel
+
+# typescript
+**/*.tsbuildinfo
+**/next-env.d.ts
