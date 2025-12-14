@@ -21,14 +21,14 @@ async def createUser(request):
         msg = {"user":"created"}
     else:
         msg = {"user":"exists"}
-        if data["meta"] == userdb.getValue(data["userid"], "meta"):
+        if data["meta"]["password"] in userdb.getValue(data["userid"], "meta"):
             msg["authenticated"] = "true"
         else:
             msg["authenticated"] = "false"
 
         msg = json.dumps(msg)
 
-    return web.Response(text=f'{msg}', content_type="application/json")
+    return web.Response(text=msg, content_type="application/json")
 
 
 async def updateUser(request):
@@ -40,7 +40,7 @@ async def updateUser(request):
     for key in data:
         userdb.setValue()
 
-async def createPOST(request):
+async def createPost(request):
     data = await request.json()
     data = dict(data)
 
@@ -53,7 +53,30 @@ async def createPOST(request):
         msg = {"post":"exists"}
     msg = json.dumps(msg)
 
-    return web.Response(text=f'{msg}', content_type="application/json")
+    return web.Response(text=msg, content_type="application/json")
+
+async def getPost(request):
+    data = await request.json()
+    data = dict(data)
+
+    if data["postType"] == "any":
+        userid = "*"
+    else:
+        userid = data["userid"]
+
+
+    posts =  postsdb.getAllPosts()[:data["count"]]
+    for i in range(len(posts)):
+        userProfile = userdb.getUser(posts[i]["userid"])
+        userProfile.pop("meta")
+        userProfile.pop("sessionid")
+
+        posts[i]["user"] = userProfile
+
+
+    posts = json.dumps(posts)
+    return web.Response(text=posts, content_type="application/json")
+
 
 async def ooo(request):
     data = await request.json()
@@ -64,11 +87,12 @@ async def ooo(request):
 app = web.Application()
 app.add_routes([
     web.get('/', index),
+    web.post('/getPosts', getPost),
 
     web.post('/', ooo),
     web.post('/createUser', createUser),
     web.post('/updateUser', updateUser),
-    web.post('/post', createPOST)
+    web.post('/post', createPost)
 ])
 
 if __name__ == '__main__':

@@ -6,13 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-
-
-
-
 export default function ComplaintReportForm() {
   const [formData, setFormData] = useState<{
-    aadhaar: Number,
+    aadhaar: number;
     image: File | null;
     title: string;
     description: string;
@@ -27,60 +23,60 @@ export default function ComplaintReportForm() {
     category: "",
   });
 
-  let myUserId;
-    useEffect(() => {
-      const storedUserId = localStorage.getItem("userid");
-      myUserId = storedUserId;
-    }, []);
-
+  const [myUserId, setMyUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const storedUserId = localStorage.getItem("userid");
+    setMyUserId(storedUserId); // Store the userId in state for reactivity
+  }, []);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    const { name } = target
+    const target = e.target;
+    const { name, value } = target;
 
     if (target instanceof HTMLInputElement && target.type === 'file') {
       setFormData((prev) => ({
         ...prev,
         [name]: target.files?.[0] ?? null,
-      }))
-      return
+      }));
+      return;
     }
 
-    const { value } = target
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }))
+    }));
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // validation
-
+    // Validation
     if (
       !formData.title ||
       !formData.description ||
       !formData.location ||
       !formData.category
     ) {
-      alert("Please fill all required fields\n" + (!formData.aadhaar ? "Please Login to upload a complaint." : "") ); }
+      alert("Please fill all required fields.\n" + (!formData.aadhaar ? "Please Login to upload a complaint." : ""));
+      return;
+    }
 
-      //TODO: Redirect to Login page if aadhar is not set.
+    if (!myUserId) {
+      alert("User not logged in. Please log in first.");
+      return;
+    }
 
     setLoading(true);
 
-    // Create FormData
+    // Create FormData to send to the backend
     const data = new FormData();
     if (formData.image) {
       data.append("image", formData.image);
     }
-
-    //TODO: Show error if userid is not set in localStorage.
-    // and dsiable form filling
     data.append("aadhaar", formData.aadhaar.toString());
     data.append("title", formData.title);
     data.append("description", formData.description);
@@ -88,14 +84,13 @@ export default function ComplaintReportForm() {
     data.append("category", formData.category);
 
     try {
-      // POST to backend
+      // Send the complaint to the backend
       const response = await fetch("http://localhost:5000/api/complaints", {
         method: "POST",
         body: data,
       });
 
       const result = await response.json();
-
       if (!response.ok) {
         throw new Error(result.message || "Failed to submit complaint");
       }
@@ -103,7 +98,7 @@ export default function ComplaintReportForm() {
       // Success feedback
       alert("Complaint submitted successfully!");
 
-      //Reset form
+      // Reset form data
       setFormData({
         aadhaar: 0,
         image: null,
@@ -113,8 +108,7 @@ export default function ComplaintReportForm() {
         category: "",
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Something went wrong";
+      const message = error instanceof Error ? error.message : "Something went wrong";
       alert(message);
     } finally {
       setLoading(false);
@@ -143,8 +137,9 @@ export default function ComplaintReportForm() {
               <Input
                 type="number"
                 name="aadhaar"
-                value={myUserId}
+                value={myUserId || formData.aadhaar}
                 className="rounded-2xl border border-[#E1F1E4] bg-white text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
+                readOnly // Aadhaar should not be edited directly by the user
               />
               <Input
                 type="file"
@@ -214,7 +209,7 @@ export default function ComplaintReportForm() {
 
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || !myUserId}
               className="w-full rounded-full bg-[#2C6E49] text-white text-base font-semibold py-3 hover:bg-[#24573A] transition disabled:opacity-80"
             >
               {loading ? "Submitting..." : "Submit Complaint"}

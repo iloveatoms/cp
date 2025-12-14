@@ -8,9 +8,6 @@ class Users:
 
         if os.path.isfile(self.dbPath):
             self.conn = sqlite3.connect(self.dbPath)
-        else:
-
-            cl
 
     def _close(self):
         self.conn.close()

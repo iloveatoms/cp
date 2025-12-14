@@ -1,8 +1,15 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 
-databases/uploads/*.*
 databases/*.db
+uploads/*
+
+#Test Files
+!uploads/6fd4ec84de591ef533b9db19ef4dcd6e
+!uploads/cfad54dd7c4ae88a154dc4472c03fd26
+!uploads/user.jpg
+!databases/users.db
+
 # dependencies
 webapp/complaint-portal/node_modules
 webapp/complaint-portal/.pnp

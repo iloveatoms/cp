@@ -22,7 +22,7 @@ function parseCookie(req: any, res: any, next: (err?: any) => void){
 }
 
 type ComplaintRequest = Request & { file?: Express.Multer.File }
-const upload = multer({ dest: path.join(__dirname, '..', '..','databases','uploads') })
+const upload = multer({ dest: path.join(__dirname, '..', '..','uploads') })
 
 const app = express()
 app.use(cors())
@@ -30,6 +30,7 @@ app.use(bodyParser.json())
 app.use(parseCookie)
 app.use(bodyParser.urlencoded({extended: true}))
 app.use(express.static(path.join(__dirname, 'build')))
+app.use(express.static(path.join(__dirname, '..', '..'))) //Root Dir
 
 
 app.post(
@@ -40,10 +41,10 @@ app.post(
     // THEN SET COOKIE & PROCEDE TO LOGIN
     if(req.cookies.sessionID === undefined){
       let sessionID = "1234abcd"
-      res.cookie('sessionID', sessionID, {
+      res.cookie("sessionID", sessionID, {
         maxAge: 900000,
         httpOnly: true,
-        sameSite: 'strict'
+        sameSite: "strict"
         })
 
         let createUser = {
@@ -59,7 +60,7 @@ app.post(
           dateOfCreation: Date.now().toString(),
           profileUrl: "uploads/user.jpg",
           bio: "",
-          meta: req.body.password.toString(),
+          meta: {password: req.body.password},
           sessionid: sessionID
         }
 
@@ -76,8 +77,13 @@ app.post(
 
         if (data["authenticated"] == "false"){
           res.contentType("text/html")
-          res.status(201).send("<script>window.alert('Wrong Password');</script>")
+          res.status(201).send("<h1 style='text-aligh:center;font-size:100px;'>Complaint Portal :: failed login</h1><script>window.alert('Wrong Password'); setTimeout(()=> {window.location.href = '/';},3000)</script>")
         }
+        else if(data["authenticated"] == "true" ){
+          res.contentType("text/html")
+          res.status(201).send(
+            "<h1 style='text-aligh:center;font-size:100px;'>Complaint Portal :: Login Success</h1><script>localStorage.setItem('userid','" + createUser["userid"] + "'); setTimeout(()=> {window.location.href = '/';},3000)</script>"
+          )}
     }
 
     else{ res.redirect('/') }
@@ -89,6 +95,7 @@ app.get(
     res.clearCookie('sessionID');
     res.redirect('/');
 })
+
 
 app.post(
   '/api/complaints',
@@ -104,7 +111,7 @@ app.post(
       "title" : req.body.title,
       "text": req.body.description,
       "imageUrl" : "uploads/" + req.file?.filename,
-      "meta": req.body.location + ":" + req.body.category,
+      "meta": { location:req.body.location, category: req.body.category, fileName: req.file?.originalname},
       "likes": 0,
       "dislikes":0,
       "credits":0
@@ -132,10 +139,23 @@ app.post(
    }
 )
 
+app.post('/api/getPosts',
+  async (req, res) => {
+      const response = await fetch("http://localhost:9999/getPosts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(req.body),
+      });
 
+      if (!response.ok) { throw new Error("Failed to fetch reports."); }
 
-
-
+      const data = await response.json();
+      res.contentType('application/json');
+      res.status(200).json(data)
+    }
+)
 app.listen(5000, () => {
   console.log('Backend running at http://localhost:5000')
 })
