@@ -8,11 +8,11 @@ Deploy the Server:
 ```bash
 /cp/webapp/complaint-portal $ npm run build
 ```
-> Start NodeJS webserver | set `"module":"commonjs"` in package.json, with this running..., in another terminal
+> 2. Start NodeJS webserver | set `"module":"commonjs"` in package.json, with this running..., in another terminal
 ```bash
 /cp/webapp/complaint-portal $ npm run dev
 ```
-> Start Database API
+> 3. Start Database API
 ```bash
 /cp/server $ python server.py
 ```
