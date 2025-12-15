@@ -85,7 +85,7 @@ export default function ComplaintReportForm() {
 
     try {
       // Send the complaint to the backend
-      const response = await fetch("http://localhost:5000/api/complaints", {
+      const response = await fetch("/api/complaints", {
         method: "POST",
         body: data,
       });

@@ -4,6 +4,8 @@ import multer from 'multer'
 import cors from 'cors'
 import bodyParser  from 'body-parser'
 
+
+const dbHost =  "http://localhost:9999"
 function parseCookie(req: any, res: any, next: (err?: any) => void){
   let d: any = new Object()
   if (req.headers.cookie === undefined){
@@ -67,7 +69,7 @@ app.post(
         res.contentType("application/json")
 
         // POST to database.
-        const resp = await fetch("http://localhost:9999/createUser", {
+        const resp = await fetch(dbHost + "/createUser", {
             method: "POST",
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body : JSON.stringify(createUser)
@@ -120,7 +122,7 @@ app.post(
     console.log(createPost)
 
     //POST to users.db
-    const resp = await fetch("http://localhost:9999/post", {
+    const resp = await fetch(dbHost + "/post", {
     method: "POST",
     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
     body : JSON.stringify(createPost)
@@ -141,7 +143,7 @@ app.post(
 
 app.post('/api/getPosts',
   async (req, res) => {
-      const response = await fetch("http://localhost:9999/getPosts", {
+      const response = await fetch(dbHost + "/getPosts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -156,6 +158,9 @@ app.post('/api/getPosts',
       res.status(200).json(data)
     }
 )
-app.listen(5000, () => {
-  console.log('Backend running at http://localhost:5000')
+
+const PORT = 5000
+const HOST = "0.0.0.0"
+app.listen(PORT, HOST,  () => {
+  console.log(`Backend running at ${HOST}:${PORT}`)
 })

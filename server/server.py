@@ -96,4 +96,4 @@ app.add_routes([
 ])
 
 if __name__ == '__main__':
-    web.run_app(app, port=9999)
+    web.run_app(app,host="localhost", port=9999)

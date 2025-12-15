@@ -59,7 +59,7 @@ export default function ReportsPage() {
         count: 10,
       };
 
-      const response = await fetch("http://localhost:5000/api/getPosts", {
+      const response = await fetch("/api/getPosts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,14 +92,14 @@ export default function ReportsPage() {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/api/updatePost", {
+      const response = await fetch("/api/updatePost", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userid: storedUserId,
-          postid,
+          postid: postid,
           likes: newLikes,
         }),
       });
