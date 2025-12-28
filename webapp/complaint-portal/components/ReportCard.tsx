@@ -67,7 +67,10 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
             onClick={handleLike}
             className="text-green-500 hover:text-green-700 focus:outline-none"
           >
+<<<<<<< HEAD
             👍
+=======
+>>>>>>> f526c1d (hello)
             <i className="fas fa-thumbs-up"></i>
           </button>
           <span className="text-gray-700">{report.likes}</span>
@@ -77,7 +80,10 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
             onClick={handleDislike}
             className="text-red-500 hover:text-red-700 focus:outline-none"
           >
+<<<<<<< HEAD
             👎
+=======
+>>>>>>> f526c1d (hello)
             <i className="fas fa-thumbs-down"></i>
           </button>
           <span className="text-gray-700">{report.dislikes}</span>

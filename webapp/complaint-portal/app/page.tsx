@@ -59,7 +59,11 @@ export default function ReportsPage() {
         count: 10,
       };
 
+<<<<<<< HEAD
       const response = await fetch("/api/getPosts", {
+=======
+      const response = await fetch("http://localhost:5000/api/getPosts", {
+>>>>>>> f526c1d (hello)
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,14 +96,22 @@ export default function ReportsPage() {
     }
 
     try {
+<<<<<<< HEAD
       const response = await fetch("/api/updatePost", {
+=======
+      const response = await fetch("http://localhost:5000/api/updatePost", {
+>>>>>>> f526c1d (hello)
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userid: storedUserId,
+<<<<<<< HEAD
           postid: postid,
+=======
+          postid,
+>>>>>>> f526c1d (hello)
           likes: newLikes,
         }),
       });
