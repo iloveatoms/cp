@@ -4,15 +4,16 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 Deploy the Server:
 
-> 1. Build static files | set `"module":"esnext"` in package, and then
+> 1. Build static files | set `"module":"esnext"` in package, RUN
 ```bash
 /cp/webapp/complaint-portal $ npm run build
 ```
-> 2. Start NodeJS webserver | set `"module":"commonjs"` in package.json, with this running..., in another terminal
+> 2. Start NodeJS webserver | set `"module":"commonjs"` in package.json, RNU:
 ```bash
 /cp/webapp/complaint-portal $ npm run dev
 ```
-> 3. Start Database API
+> with that running..., in another terminal
+> 3. Start Database API | RUN
 ```bash
 /cp/server $ python server.py
 ```
