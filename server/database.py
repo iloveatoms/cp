@@ -201,8 +201,6 @@ class Posts:
 
         if os.path.isfile(self.dbPath):
             self.conn = sqlite3.connect(self.dbPath)
-        else:
-            raise FileNotFoundError(f'{self.dbPath} does not exist.')
 
     def _close(self):
         self.conn.close()
@@ -358,3 +356,131 @@ class Posts:
             }
             for r in rows
         ]
+
+
+class Likes:
+    def __init__(self, dbPath: str):
+        self.dbPath = dbPath
+
+        if os.path.isfile(self.dbPath):
+            self.conn = sqlite3.connect(self.dbPath)
+
+    def _close(self):
+        self.conn.close()
+
+    def _execute(self, command: str):
+        """Executes an SQL command and returns the result"""
+        cur = self.conn.cursor()
+        return cur.execute(command)
+
+    # ---------- Create ----------
+    def createLike(self, likeid: str, userid: str, postid: str):
+        cur = self.conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO likes (likeid, userid, postid)
+            VALUES (?, ?, ?)
+            """,
+            (likeid, userid, postid)
+        )
+        cur.close()
+        self.conn.commit()
+
+    # ---------- Get ----------
+    def getLike(self, likeid: str) -> dict | None:
+        cur = self.conn.cursor()
+        cur.execute(
+            "SELECT likeid, userid, postid FROM likes WHERE likeid = ?",
+            (likeid,)
+        )
+        row = cur.fetchone()
+        cur.close()
+
+        if not row:
+            return None
+
+        return {
+            "likeid": row[0],
+            "userid": row[1],
+            "postid": row[2]
+        }
+
+    def getLikesByPost(self, postid: str) -> list[dict]:
+        cur = self.conn.cursor()
+        cur.execute(
+            "SELECT likeid, userid, postid FROM likes WHERE postid = ?",
+            (postid,)
+        )
+        rows = cur.fetchall()
+        cur.close()
+
+        return [
+            {
+                "likeid": r[0],
+                "userid": r[1],
+                "postid": r[2]
+            }
+            for r in rows
+        ]
+
+    def getLikesByUser(self, userid: str) -> list[dict]:
+        cur = self.conn.cursor()
+        cur.execute(
+            "SELECT likeid, userid, postid FROM likes WHERE userid = ?",
+            (userid,)
+        )
+        rows = cur.fetchall()
+        cur.close()
+
+        return [
+            {
+                "likeid": r[0],
+                "userid": r[1],
+                "postid": r[2]
+            }
+            for r in rows
+        ]
+
+    # ---------- Checks ----------
+    def hasUserLikedPost(self, userid: str, postid: str) -> bool:
+        cur = self.conn.cursor()
+        cur.execute(
+            """
+            SELECT 1 FROM likes
+            WHERE userid = ? AND postid = ?
+            LIMIT 1
+            """,
+            (userid, postid)
+        )
+        exists = cur.fetchone() is not None
+        cur.close()
+        return exists
+
+    def countLikesForPost(self, postid: str) -> int:
+        cur = self.conn.cursor()
+        cur.execute(
+            "SELECT COUNT(*) FROM likes WHERE postid = ?",
+            (postid,)
+        )
+        count = cur.fetchone()[0]
+        cur.close()
+        return count
+
+    # ---------- Delete ----------
+    def deleteLike(self, likeid: str):
+        cur = self.conn.cursor()
+        cur.execute(
+            "DELETE FROM likes WHERE likeid = ?",
+            (likeid,)
+        )
+        self.conn.commit()
+        cur.close()
+
+    def deleteLikeByUserPost(self, userid: str, postid: str):
+        cur = self.conn.cursor()
+        cur.execute(
+            "DELETE FROM likes WHERE userid = ? AND postid = ?",
+            (userid, postid)
+        )
+        self.conn.commit()
+        cur.close()

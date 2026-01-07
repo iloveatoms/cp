@@ -113,7 +113,10 @@ app.post(
       "title" : req.body.title,
       "text": req.body.description,
       "imageUrl" : "uploads/" + req.file?.filename,
-      "meta": { location:req.body.location, category: req.body.category, fileName: req.file?.originalname},
+      "meta": { location:req.body.location,
+                category: req.body.category,
+                fileName: req.file?.originalname
+              },
       "likes": 0,
       "dislikes":0,
       "credits":0
@@ -128,10 +131,10 @@ app.post(
     body : JSON.stringify(createPost)
       })
     if (!resp.ok){ res.status(resp.status).json({error: 'Failed;;'}) }
+
     const data = await resp.json()
 
-
-      res.status(201).json({
+    res.status(201).json({
         message: function(){
           if(data["user"] == "not-found"){ return "Please Login First."}
           else if(data["post"] == "created"){ return "Complaint Received."}

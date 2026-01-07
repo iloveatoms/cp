@@ -7,6 +7,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 export default function ComplaintReportForm() {
+
+  const [myUserId, setMyUserId] = useState<number>(-1);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const storedUserId = Number(localStorage.getItem("userid") || -1);
+    setMyUserId(storedUserId); // Store the userId in state for reactivity
+  }, []);
+
   const [formData, setFormData] = useState<{
     aadhaar: number;
     image: File | null;
@@ -15,7 +24,7 @@ export default function ComplaintReportForm() {
     location: string;
     category: string;
   }>({
-    aadhaar: 0,
+    aadhaar: myUserId,
     image: null,
     title: "",
     description: "",
@@ -23,13 +32,6 @@ export default function ComplaintReportForm() {
     category: "",
   });
 
-  const [myUserId, setMyUserId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const storedUserId = localStorage.getItem("userid");
-    setMyUserId(storedUserId); // Store the userId in state for reactivity
-  }, []);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -65,7 +67,7 @@ export default function ComplaintReportForm() {
       return;
     }
 
-    if (!myUserId) {
+    if (formData.aadhaar == -1) {
       alert("User not logged in. Please log in first.");
       return;
     }
@@ -100,7 +102,7 @@ export default function ComplaintReportForm() {
 
       // Reset form data
       setFormData({
-        aadhaar: 0,
+        aadhaar: myUserId,
         image: null,
         title: "",
         description: "",
@@ -137,7 +139,7 @@ export default function ComplaintReportForm() {
               <Input
                 type="number"
                 name="aadhaar"
-                value={myUserId || formData.aadhaar}
+                value={formData.aadhaar}
                 className="rounded-2xl border border-[#E1F1E4] bg-white text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
                 readOnly // Aadhaar should not be edited directly by the user
               />

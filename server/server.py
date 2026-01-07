@@ -1,6 +1,7 @@
 from aiohttp import web
 import json
 import database
+from pprint import pprint as pp
 
 
 userdb = database.Users('../databases/users.db')
@@ -26,8 +27,7 @@ async def createUser(request):
         else:
             msg["authenticated"] = "false"
 
-        msg = json.dumps(msg)
-
+    msg = json.dumps(msg)
     return web.Response(text=msg, content_type="application/json")
 
 
@@ -51,8 +51,10 @@ async def createPost(request):
         msg = {"post":"created"}
     else:
         msg = {"post":"exists"}
-    msg = json.dumps(msg)
 
+    msg = json.dumps(msg)
+    pp(data)
+    pp(msg)
     return web.Response(text=msg, content_type="application/json")
 
 async def getPost(request):
