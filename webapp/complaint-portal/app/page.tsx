@@ -100,7 +100,8 @@ export default function ReportsPage() {
         body: JSON.stringify({
           userid: storedUserId,
           postid: postid,
-          likes: newLikes,
+          likes: newLikes, //remove
+          status: "liked" // or "disliked"
         }),
       });
 

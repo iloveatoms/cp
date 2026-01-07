@@ -30,3 +30,13 @@ CREATE TABLE post (
         ON UPDATE CASCADE
         ON DELETE CASCADE
 );
+
+CREATE TABLE likes (
+    likeid TEXT PRIMARY KEY,
+    userid TEXT NOT NULL REFERENCES user(userid)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    postid TEXT NOT NULL REFERENCES post(postid)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);

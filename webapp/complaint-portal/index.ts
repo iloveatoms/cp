@@ -144,11 +144,11 @@ app.post(
 app.post('/api/getPosts',
   async (req, res) => {
       const response = await fetch(dbHost + "/getPosts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(req.body),
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(req.body)
       });
 
       if (!response.ok) { throw new Error("Failed to fetch reports."); }
@@ -157,6 +157,29 @@ app.post('/api/getPosts',
       res.contentType('application/json');
       res.status(200).json(data)
     }
+)
+
+
+app.post('/api/updatePost',
+  async (req, res) => {
+    // const response = await fetch(dbHost + "/updatePost",
+    //   {
+    //     method : "POST",
+    //     headers: {
+    //       "Content-Type" : "application/json",
+    //     },
+    //     body : JSON.stringify(req.body)
+    //   });
+
+    // const data = await response.json();
+    console.log(req.body);
+    res.contentType("application/json");
+    // res.status(200).json({
+    //  postid : data.postid,
+    //  likes : data.likes
+    // });
+    res.status(200).json({success : true});
+  }
 )
 
 const PORT = 5000
