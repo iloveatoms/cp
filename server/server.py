@@ -6,6 +6,7 @@ from pprint import pprint as pp
 
 userdb = database.Users('../databases/users.db')
 postsdb = database.Posts('../databases/users.db')
+likesdb = database.Likes('../databases/users.db')
 
 async def index(request):
     return web.Response(
