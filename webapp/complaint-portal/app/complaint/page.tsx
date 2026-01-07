@@ -8,13 +8,7 @@ import { Label } from "@/components/ui/label";
 
 export default function ComplaintReportForm() {
 
-  const [myUserId, setMyUserId] = useState<number>(-1);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const storedUserId = Number(localStorage.getItem("userid") || -1);
-    setMyUserId(storedUserId); // Store the userId in state for reactivity
-  }, []);
 
   const [formData, setFormData] = useState<{
     aadhaar: number;
@@ -24,7 +18,7 @@ export default function ComplaintReportForm() {
     location: string;
     category: string;
   }>({
-    aadhaar: myUserId,
+    aadhaar: -1,
     image: null,
     title: "",
     description: "",
@@ -32,6 +26,15 @@ export default function ComplaintReportForm() {
     category: "",
   });
 
+
+  useEffect(() => {
+    const storedUserId = Number(localStorage.getItem("userid") || -1);
+    setFormData((prev) => ({
+      ...prev,
+      aadhaar: storedUserId,
+    }));
+
+  }, []);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -102,7 +105,7 @@ export default function ComplaintReportForm() {
 
       // Reset form data
       setFormData({
-        aadhaar: myUserId,
+        aadhaar: formData.aadhaar,
         image: null,
         title: "",
         description: "",
@@ -211,7 +214,7 @@ export default function ComplaintReportForm() {
 
             <Button
               type="submit"
-              disabled={loading || !myUserId}
+              disabled={loading || (formData.aadhaar == -1)}
               className="w-full rounded-full bg-[#2C6E49] text-white text-base font-semibold py-3 hover:bg-[#24573A] transition disabled:opacity-80"
             >
               {loading ? "Submitting..." : "Submit Complaint"}
