@@ -4,11 +4,11 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 Deploy the Server:
 
-> 1. Build static files | set `"module":"esnext"` in package, RUN
+> 1. Build static files | set `"module":"esnext"` in tsconfig.json, RUN
 ```bash
 /cp/webapp/complaint-portal $ npm run build
 ```
-> 2. Start NodeJS webserver | set `"module":"commonjs"` in package.json, RNU:
+> 2. Start NodeJS webserver | set `"module":"commonjs"` in tsconfig.json, RNU:
 ```bash
 /cp/webapp/complaint-portal $ npm run dev
 ```
