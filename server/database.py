@@ -361,37 +361,41 @@ class Posts:
 class Likes:
     def __init__(self, dbPath: str):
         self.dbPath = dbPath
+        self.conn = sqlite3.connect(self.dbPath)
 
-        if os.path.isfile(self.dbPath):
-            self.conn = sqlite3.connect(self.dbPath)
-
-    def _close(self):
-        self.conn.close()
-
-    def _execute(self, command: str):
-        """Executes an SQL command and returns the result"""
-        cur = self.conn.cursor()
-        return cur.execute(command)
-
-    # ---------- Create ----------
-    def createLike(self, likeid: str, userid: str, postid: str):
-        cur = self.conn.cursor()
-        cur.execute(
-            """
-            INSERT INTO likes (likeid, userid, postid)
-            VALUES (?, ?, ?)
-            """,
-            (likeid, userid, postid)
-        )
-        cur.close()
+    # ---------- Setters ----------
+    def setInteraction(self, userid: str, postid: str, action: str):
+        """
+        action: 'liked', 'disliked', or 'neutral'
+        Counters are handled by triggers
+        """
+        liked = 1 if action == "liked" else 0
+        disliked = 1 if action == "disliked" else 0
+        if action == "neutral":
+            self.conn.execute(
+                "DELETE FROM likes WHERE userid = ? AND postid = ?",
+                (userid, postid)
+            )
+        else:
+            self.conn.execute(
+                """
+                INSERT INTO likes (userid, postid, liked, disliked)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(userid, postid)
+                DO UPDATE SET liked = excluded.liked,
+                              disliked = excluded.disliked
+                """,
+                (userid, postid, liked, disliked)
+            )
         self.conn.commit()
 
-    # ---------- Get ----------
-    def getLike(self, likeid: str) -> dict | None:
-        cur = self.conn.cursor()
-        cur.execute(
-            "SELECT likeid, userid, postid FROM likes WHERE likeid = ?",
-            (likeid,)
+        return (liked, disliked)
+
+    # ---------- Getters (Posts) ----------
+    def getInteraction(self, userid: str, postid: str):
+        cur = self.conn.execute(
+            "SELECT * FROM likes WHERE postid = ? AND userid = ?",
+            (postid, userid)
         )
         row = cur.fetchone()
         cur.close()
@@ -400,87 +404,49 @@ class Likes:
             return None
 
         return {
-            "likeid": row[0],
-            "userid": row[1],
-            "postid": row[2]
-        }
+            "userid"   : row[0],
+            "postid"   : row[1],
+            "liked"    : bool(row[2]),
+            "disliked" : bool(row[3])
+            }
 
-    def getLikesByPost(self, postid: str) -> list[dict]:
-        cur = self.conn.cursor()
-        cur.execute(
-            "SELECT likeid, userid, postid FROM likes WHERE postid = ?",
+    def getLikesFromPost(self, postid: str) -> list[str]:
+        cur = self.conn.execute(
+            "SELECT userid FROM likes WHERE postid = ? AND liked = 1",
             (postid,)
         )
-        rows = cur.fetchall()
-        cur.close()
+        return [r[0] for r in cur.fetchall()]
 
-        return [
-            {
-                "likeid": r[0],
-                "userid": r[1],
-                "postid": r[2]
-            }
-            for r in rows
-        ]
+    def getDislikesFromPost(self, postid: str) -> list[str]:
+        cur = self.conn.execute(
+            "SELECT userid FROM likes WHERE postid = ? AND disliked = 1",
+            (postid,)
+        )
+        return [r[0] for r in cur.fetchall()]
 
-    def getLikesByUser(self, userid: str) -> list[dict]:
-        cur = self.conn.cursor()
-        cur.execute(
-            "SELECT likeid, userid, postid FROM likes WHERE userid = ?",
+    # ---------- Getters (Users) ----------
+    def getLikedPostsByUser(self, userid: str) -> list[str]:
+        cur = self.conn.execute(
+            "SELECT postid FROM likes WHERE userid = ? AND liked = 1",
             (userid,)
         )
-        rows = cur.fetchall()
-        cur.close()
+        return [r[0] for r in cur.fetchall()]
 
-        return [
-            {
-                "likeid": r[0],
-                "userid": r[1],
-                "postid": r[2]
-            }
-            for r in rows
-        ]
-
-    # ---------- Checks ----------
-    def hasUserLikedPost(self, userid: str, postid: str) -> bool:
-        cur = self.conn.cursor()
-        cur.execute(
-            """
-            SELECT 1 FROM likes
-            WHERE userid = ? AND postid = ?
-            LIMIT 1
-            """,
-            (userid, postid)
+    def getDislikedPostsByUser(self, userid: str) -> list[str]:
+        cur = self.conn.execute(
+            "SELECT postid FROM likes WHERE userid = ? AND disliked = 1",
+            (userid,)
         )
-        exists = cur.fetchone() is not None
-        cur.close()
-        return exists
+        return [r[0] for r in cur.fetchall()]
 
-    def countLikesForPost(self, postid: str) -> int:
-        cur = self.conn.cursor()
-        cur.execute(
-            "SELECT COUNT(*) FROM likes WHERE postid = ?",
+    # ---------- Stats ----------
+    def getPostStats(self, postid: str) -> dict:
+        cur = self.conn.execute(
+            "SELECT SUM(liked), SUM(disliked) FROM likes WHERE postid = ?",
             (postid,)
         )
-        count = cur.fetchone()[0]
-        cur.close()
-        return count
-
-    # ---------- Delete ----------
-    def deleteLike(self, likeid: str):
-        cur = self.conn.cursor()
-        cur.execute(
-            "DELETE FROM likes WHERE likeid = ?",
-            (likeid,)
-        )
-        self.conn.commit()
-        cur.close()
-
-    def deleteLikeByUserPost(self, userid: str, postid: str):
-        cur = self.conn.cursor()
-        cur.execute(
-            "DELETE FROM likes WHERE userid = ? AND postid = ?",
-            (userid, postid)
-        )
-        self.conn.commit()
-        cur.close()
+        res = cur.fetchone()
+        return {
+            "likes": res[0] or 0,
+            "dislikes": res[1] or 0
+        }

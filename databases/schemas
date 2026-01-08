@@ -32,11 +32,46 @@ CREATE TABLE post (
 );
 
 CREATE TABLE likes (
-    likeid TEXT PRIMARY KEY,
     userid TEXT NOT NULL REFERENCES user(userid)
-        ON UPDATE CASCADE
-        ON DELETE CASCADE,
+        ON UPDATE CASCADE ON DELETE CASCADE,
     postid TEXT NOT NULL REFERENCES post(postid)
-        ON UPDATE CASCADE
-        ON DELETE CASCADE
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    liked BOOLEAN NOT NULL DEFAULT 0,
+    disliked BOOLEAN NOT NULL DEFAULT 0,
+    PRIMARY KEY (userid, postid),
+    CONSTRAINT check_single_action CHECK (liked + disliked <= 1)
 );
+
+
+-- likes TRIGGERS --
+
+-- INSERT
+CREATE TRIGGER likes_after_insert
+AFTER INSERT ON likes
+BEGIN
+    UPDATE post
+    SET likes = likes + NEW.liked,
+        dislikes = dislikes + NEW.disliked
+    WHERE postid = NEW.postid;
+END;
+
+-- UPDATE
+CREATE TRIGGER likes_after_update
+AFTER UPDATE OF liked, disliked ON likes
+BEGIN
+    UPDATE post
+    SET likes = likes + (NEW.liked - OLD.liked),
+        dislikes = dislikes + (NEW.disliked - OLD.disliked)
+    WHERE postid = NEW.postid;
+END;
+
+-- DELETE
+CREATE TRIGGER likes_after_delete
+AFTER DELETE ON likes
+BEGIN
+    UPDATE post
+    SET likes = likes - OLD.liked,
+        dislikes = dislikes - OLD.disliked
+    WHERE postid = OLD.postid;
+END;
+

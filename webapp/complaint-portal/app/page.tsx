@@ -1,61 +1,22 @@
 "use client";
 import { useEffect, useState } from "react";
 import ReportCard from "@/components/ReportCard";
-
-type UserProfile = {
-  userid: number;
-  name: string;
-  email: string;
-  phone: string;
-  aadhaar: string;
-  age: number;
-  followers: string;
-  following: string;
-  credits: number;
-  dateOfCreation: string;
-  profileUrl: string;
-  bio: string;
-};
-
-type Report = {
-  postid: string;
-  userid: number;
-  dateOfCreation: string;
-  title: string;
-  text: string;
-  imageUrl: string;
-  meta: {
-    location: string;
-    category: string;
-    fileName: string;
-  };
-  likes: number;
-  dislikes: number;
-  credits: number;
-  user: UserProfile;
-};
+import type { Report } from "@/components/ReportCard";
 
 export default function ReportsPage() {
+  const [storedUserId, setUserId] = useState<string>("-1");
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const storedUserId = localStorage.getItem("userid");
-    if (!storedUserId) {
-      setError("Please log in to vote.");
-    }
-  }, []);
-
   const fetchReports = async () => {
     setLoading(true);
-    setError(null); // Reset the error before fetching data
+    setError(null);
 
     try {
-      const storedUserId = localStorage.getItem("userid") || "0";
       const requestBody = {
-        userid: storedUserId,
-        postType: "any", // This could be "this user" or "any"
+        userid: storedUserId, // Access id
+        postUser: "any", // This could be "this user" or "any" #Filter
         count: 10,
       };
 
@@ -72,7 +33,7 @@ export default function ReportsPage() {
       }
 
       const data = await response.json();
-      setReports(data); // Assuming "reports" contains the report data
+      setReports(data); // Assuming "reports" contains the type Report data
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -80,67 +41,60 @@ export default function ReportsPage() {
     }
   };
 
-  useEffect(() => {
-    fetchReports();
-  }, []);
-
-  const updatePost = async (postid: string, newLikes: number) => {
-    const storedUserId = localStorage.getItem("userid");
-    if (!storedUserId) {
-      setError("Please log in to like this post.");
-      return;
-    }
-
+  const updateLikes = async (updatedReport : Report, action: string) => {
     try {
-      const response = await fetch("/api/updatePost", {
+      const response = await fetch("/api/updateLikes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userid: storedUserId,
-          postid: postid,
-          likes: newLikes, //remove
-          status: "liked" // or "disliked"
+          postid: updatedReport.postid,
+          action: action // "liked" or "disliked" or "neutral"
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to update post.");
+      if (!response.ok) { throw new Error("Server: Failed to update post."); }
+      const result = await response.json();
+      console.log(result);
+      if(result){
+        setReports((prevReports) =>
+          prevReports.map((report) =>
+            report.postid === updatedReport.postid
+              ? { ...report,
+                likes: result.post.likes,
+                dislikes: result.post.dislikes,
+                currentUser : {
+                  ...result.currentUser
+                }
+              }
+              : report
+          )
+        );
       }
 
-      const result = await response.json();
-      if (result.success) {
-        console.log("Post updated successfully");
-      } else {
-        throw new Error(result.message || "Failed to update post.");
-      }
     } catch (error) {
       alert(error instanceof Error ? error.message : "Something went wrong");
     }
   };
 
-  const handleVote = (postid: string, delta: number) => {
-    const storedUserId = localStorage.getItem("userid");
-
-    if (!storedUserId) {
-      setError("Please log in to vote.");
-      return; // Don't allow vote if user is not logged in
-    }
-
-    setReports((prevReports) =>
-      prevReports.map((report) =>
-        report.postid === postid
-          ? { ...report, likes: report.likes + delta }
-          : report
-      )
-    );
-
-    const updatedReport = reports.find((report) => report.postid === postid);
-    if (updatedReport) {
-      updatePost(postid, updatedReport.likes + delta);
-    }
+  const handleVote = (updatedReport: Report, action: string) =>
+  {
+    if (storedUserId === "-1") { setError("Please log in to vote."); return; }
+    updateLikes(updatedReport, action);
   };
+
+
+  // -------------- INIT --------------
+  useEffect(() => {
+    setUserId(localStorage.getItem("userid") || "-1");
+  }, []);
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
 
   if (loading) {
     return (

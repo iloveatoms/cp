@@ -1,6 +1,6 @@
 import React from "react";
 
-type UserProfile = {
+export type UserProfile = {
   userid: number;
   name: string;
   email: string;
@@ -15,7 +15,7 @@ type UserProfile = {
   bio: string;
 };
 
-type Report = {
+export type Report = {
   postid: string;
   userid: number;
   dateOfCreation: string;
@@ -31,20 +31,32 @@ type Report = {
   dislikes: number;
   credits: number;
   user: UserProfile;
+  currentUser : {
+    userid : number,
+    postLiked : boolean,
+    postDisliked : boolean
+    // comments : {}
+  }
 };
 
 interface ReportCardProps {
   report: Report;
-  onVote: (postid: string, delta: number) => void; // Function to handle voting
+  onVote: (updatedReport : Report, action: string) => void;
 }
 
 const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
-  const handleLike = () => {
-    onVote(report.postid, 1); // Increment likes
-  };
+  let action : string;
 
-  const handleDislike = () => {
-    onVote(report.postid, -1); // Decrement likes (dislike)
+  const handleLikes = (e: React.MouseEvent<HTMLButtonElement>) => {
+    action = "neutral";
+    if (
+      !report.currentUser.postLiked &&
+      !report.currentUser.postDisliked
+    )
+    {
+    action = ((e.target as HTMLButtonElement).getAttribute("button-type") === "btnLike") ? "liked" : "disliked";
+    }
+    onVote(report, action);
   };
 
   return (
@@ -64,7 +76,9 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
       <div className="flex items-center space-x-4 mt-4">
         <div className="flex items-center space-x-1">
           <button
-            onClick={handleLike}
+            button-type="btnLike"
+            button-active={report.currentUser.postLiked}
+            onClick={handleLikes}
             className="text-green-500 hover:text-green-700 focus:outline-none"
           >
             👍
@@ -74,7 +88,9 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
         </div>
         <div className="flex items-center space-x-1">
           <button
-            onClick={handleDislike}
+            button-type="btnDislike"
+            button-active={report.currentUser.postDisliked}
+            onClick={handleLikes}
             className="text-red-500 hover:text-red-700 focus:outline-none"
           >
             👎
@@ -101,3 +117,4 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
 };
 
 export default ReportCard;
+

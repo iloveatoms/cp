@@ -58,23 +58,64 @@ async def createPost(request):
     pp(msg)
     return web.Response(text=msg, content_type="application/json")
 
-async def getPost(request):
+async def updateLikes(request):
+    data = await request.json()
+
+    accessUserId = data["userid"]
+    postid = data["postid"]
+    action = data["action"]
+
+
+    liked, disliked = likesdb.setInteraction(accessUserId, postid, action)
+
+    msg = {}
+    msg["currentUser"] = {
+        "userid" : accessUserId,
+        "liked" : bool(liked),
+        "disliked" : bool(disliked)
+    }
+
+    post = postsdb.getPost(postid)
+    msg["post"] = {
+        "postid" : postid,
+        "likes"  : post["likes"],
+        "dislikes" : post["dislikes"]
+    }
+
+    msg = json.dumps(msg)
+    return web.Response(text=msg, content_type="application/json")
+
+
+async def getPosts(request):
     data = await request.json()
     data = dict(data)
 
-    if data["postType"] == "any":
-        userid = "*"
-    else:
-        userid = data["userid"]
 
+    accessUserId = data["userid"]
+    postedBy = data["postUser"]
+    postCount = data["count"]
 
-    posts =  postsdb.getAllPosts()[:data["count"]]
+    posts =  postsdb.getAllPosts()[:postCount]
     for i in range(len(posts)):
-        userProfile = userdb.getUser(posts[i]["userid"])
-        userProfile.pop("meta")
-        userProfile.pop("sessionid")
+        postedUserProfile = userdb.getUser(posts[i]["userid"])
+        if postedUserProfile:
+            postedUserProfile.pop("meta")
+            postedUserProfile.pop("sessionid")
 
-        posts[i]["user"] = userProfile
+        posts[i]["user"] = postedUserProfile
+
+        accessUserProfile = {}
+        accessUserProfile["userid"] = accessUserId
+
+        userPostInteraction = likesdb.getInteraction(posts[i]["postid"], accessUserId)
+        if accessUserId == "-1" or not userPostInteraction:
+            accessUserProfile["postLiked"] = False
+            accessUserProfile["postDisliked"] = False
+        else:
+            accessUserProfile["postLiked"] = userPostInteraction["liked"]
+            accessUserProfile["postDisliked"] = userPostInteraction["disliked"]
+
+        posts[i]["currentUser"] = accessUserProfile
 
 
     posts = json.dumps(posts)
@@ -90,7 +131,8 @@ async def ooo(request):
 app = web.Application()
 app.add_routes([
     web.get('/', index),
-    web.post('/getPosts', getPost),
+    web.post('/getPosts', getPosts),
+    web.post('/updateLikes', updateLikes),
 
     web.post('/', ooo),
     web.post('/createUser', createUser),

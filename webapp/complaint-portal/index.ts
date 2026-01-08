@@ -3,6 +3,8 @@ import path, { parse } from 'path'
 import multer from 'multer'
 import cors from 'cors'
 import bodyParser  from 'body-parser'
+import { randomBytes } from 'crypto'
+
 
 
 const dbHost =  "http://localhost:9999"
@@ -42,7 +44,7 @@ app.post(
     // IF no cookie.sessionID
     // THEN SET COOKIE & PROCEDE TO LOGIN
     if(req.cookies.sessionID === undefined){
-      let sessionID = "1234abcd"
+      let sessionID = String(randomBytes(10));
       res.cookie("sessionID", sessionID, {
         maxAge: 900000,
         httpOnly: true,
@@ -78,14 +80,23 @@ app.post(
         const data = await resp.json()
 
         if (data["authenticated"] == "false"){
-          res.contentType("text/html")
-          res.status(201).send("<h1 style='text-aligh:center;font-size:100px;'>Complaint Portal :: failed login</h1><script>window.alert('Wrong Password'); setTimeout(()=> {window.location.href = '/';},3000)</script>")
+          res.contentType("text/html");
+          res.status(201)
+            .json({
+            authenticated : false
+          });
         }
         else if(data["authenticated"] == "true" ){
-          res.contentType("text/html")
-          res.status(201).send(
-            "<h1 style='text-aligh:center;font-size:100px;'>Complaint Portal :: Login Success</h1><script>localStorage.setItem('userid','" + createUser["userid"] + "'); setTimeout(()=> {window.location.href = '/';},3000)</script>"
-          )}
+          res.contentType("text/html");
+          res.status(201)
+           .send({
+             body :
+             "<h1 style='text-aligh:center;font-size:100px;'>Complaint Portal :: \
+             Login Success</h1><script>localStorage.setItem('userid','" + createUser["userid"] + "'); setTimeout(()=> {window.location.href = '/';},3000)</script>",
+             authenticated : true,
+             userid: createUser.aadhar
+          });
+        }
     }
 
     else{ res.redirect('/') }
@@ -163,25 +174,34 @@ app.post('/api/getPosts',
 )
 
 
-app.post('/api/updatePost',
+app.post('/api/updateLikes',
   async (req, res) => {
-    // const response = await fetch(dbHost + "/updatePost",
-    //   {
-    //     method : "POST",
-    //     headers: {
-    //       "Content-Type" : "application/json",
-    //     },
-    //     body : JSON.stringify(req.body)
-    //   });
+    const response = await fetch(dbHost + "/updateLikes", {
+        method : "POST",
+        headers: {
+          "Content-Type" : "application/json",
+        },
+        body : JSON.stringify(req.body)
+    });
 
-    // const data = await response.json();
+    const data = await response.json();
     console.log(req.body);
+
     res.contentType("application/json");
-    // res.status(200).json({
-    //  postid : data.postid,
-    //  likes : data.likes
-    // });
-    res.status(200).json({success : true});
+    res.status(200).json({
+
+      // type Report.currentUser
+      currentUser : {
+        userid : Number(req.body.userid),
+        postLiked : data["currentUser"]["liked"],
+        postDisliked : data["currentUser"]["disliked"]
+      },
+      post : {
+        postid : data["post"]["postid"],
+        likes :  data["post"]["likes"],
+        dislikes : data["post"]["dislikes"]
+      }
+    });
   }
 )
 

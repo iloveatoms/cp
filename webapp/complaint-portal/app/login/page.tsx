@@ -8,19 +8,17 @@ import { Label } from "@/components/ui/label"
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({
-    aadhaar: "",
+    aadhaar: -1,
     password: "",
   })
 
   useEffect(() => {
-  const savedAadhaar = localStorage.getItem("aadhaar") || "000000000000"
-    if (savedAadhaar) {
-      setFormData((prev) => ({
-        ...prev,
-        aadhaar: savedAadhaar,
-      }))
-    }
-  }, [])
+    const savedAadhaar = Number(localStorage.getItem("userid") || "-1");
+    setFormData( (prev) => ({
+      ...prev,
+      aadhaar: savedAadhaar,
+    }))
+  },[]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -30,8 +28,28 @@ export default function LoginForm() {
     }))
   }
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    // POST to /api/login
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const response = await fetch('/api/login', {
+      method : "POST",
+      headers : {'Content-Type' : 'application/json'},
+      body : JSON.stringify({
+        aadhaar : formData.aadhaar,
+        password : formData.password
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.authenticated === true){
+      localStorage.setItem("userid", data.userid);
+      window.alert('Login Successful');
+      window.location.href = "/";
+    }
+    else{
+      window.alert("Wrong Password.");
+    }
+
   }
 
   return (
@@ -44,7 +62,7 @@ export default function LoginForm() {
             </p>
             <h2 className="text-3xl font-semibold text-[#2C6E49]">User Login</h2>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-4" action={'/api/login'} method="POST">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="aadhaar">Aadhaar Number</Label>
               <Input
@@ -52,7 +70,6 @@ export default function LoginForm() {
                 type="number"
                 name="aadhaar"
                 placeholder="Enter 12-digit Aadhaar"
-                value={formData.aadhaar}
                 onChange={handleChange}
                 maxLength={12}
                 minLength={12}
