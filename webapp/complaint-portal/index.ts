@@ -155,6 +155,8 @@ app.post(
    }
 )
 
+
+
 app.post('/api/getPosts',
   async (req, res) => {
       const response = await fetch(dbHost + "/getPosts", {
@@ -167,7 +169,7 @@ app.post('/api/getPosts',
 
       if (!response.ok) { throw new Error("Failed to fetch reports."); }
 
-      const data = await response.json();
+      let data = await response.json();
       res.contentType('application/json');
       res.status(200).json(data)
     }

@@ -11,14 +11,14 @@ export default function ComplaintReportForm() {
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState<{
-    aadhaar: number;
+    aadhaar: string;
     image: File | null;
     title: string;
     description: string;
     location: string;
     category: string;
   }>({
-    aadhaar: -1,
+    aadhaar: "-1",
     image: null,
     title: "",
     description: "",
@@ -28,7 +28,7 @@ export default function ComplaintReportForm() {
 
 
   useEffect(() => {
-    const storedUserId = Number(localStorage.getItem("userid") || -1);
+    const storedUserId = localStorage.getItem("userid") || "-1";
     setFormData((prev) => ({
       ...prev,
       aadhaar: storedUserId,
@@ -70,7 +70,7 @@ export default function ComplaintReportForm() {
       return;
     }
 
-    if (formData.aadhaar == -1) {
+    if (formData.aadhaar == "-1") {
       alert("User not logged in. Please log in first.");
       return;
     }
@@ -140,9 +140,9 @@ export default function ComplaintReportForm() {
             <div className="space-y-2">
               <Label className="text-[#2C6E49] font-medium">Aadhaar</Label>
               <Input
-                type="number"
+                type="text"
                 name="aadhaar"
-                value={formData.aadhaar}
+                value={formData.aadhaar == "-1" ? "Login First" : formData.aadhaar}
                 className="rounded-2xl border border-[#E1F1E4] bg-white text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
                 readOnly // Aadhaar should not be edited directly by the user
               />
@@ -214,7 +214,7 @@ export default function ComplaintReportForm() {
 
             <Button
               type="submit"
-              disabled={loading || (formData.aadhaar == -1)}
+              disabled={loading || (formData.aadhaar == "-1")}
               className="w-full rounded-full bg-[#2C6E49] text-white text-base font-semibold py-3 hover:bg-[#24573A] transition disabled:opacity-80"
             >
               {loading ? "Submitting..." : "Submit Complaint"}
