@@ -8,14 +8,58 @@ userdb = database.Users('../databases/users.db')
 postsdb = database.Posts('../databases/users.db')
 likesdb = database.Likes('../databases/users.db')
 
+
+
+## Admin API
 async def index(request):
+    with open('admin.html') as f:
+        INDEX_FILE = f.read()
+
     return web.Response(
-        text="<h1 style='text-align:center;font-size:50px;font-family:sans-serif'>Hello API</h1>",
+        text=INDEX_FILE,
         content_type='text/html'
         )
 
+async def ooo(request):
+    data = await request.json()
+
+    action = data["action"]
+    table = data["table"]
+
+    msg = {"status":"error"}
+
+    if action == "SELECT":
+        ## QUERY COMMANDS ##
+
+        # COLUMNS
+        columns = "*"
+        if data.get("columns"):
+            columns = ",".join(data["columns"]) #SQL Injection 🤩
+
+        limit = data["limit"] if data.get("limit") else 10
+
+        # SORT BY
+        # WHERE condition
+
+
+        result = userdb._execute(f"SELECT {columns} FROM {table} LIMIT {limit}")
+
+        if result:
+            headers = list(map(lambda i : i[0], result.description))
+            rows = result.fetchall()
+
+            msg["status"] = "success"
+            msg["headers"] = headers
+            msg["rows"] = rows
+
+    msg = json.dumps(msg)
+    return web.Response(text=msg, content_type="application/json")
+
+
+
+## Web API
 async def createUser(request):
-    data = await request.json()  # Extract POST data
+    data = await request.json()
     data = dict(data)
 
     if userdb.getUser(data["userid"])==None:
@@ -122,19 +166,19 @@ async def getPosts(request):
     return web.Response(text=posts, content_type="application/json")
 
 
-async def ooo(request):
-    data = await request.json()
-    data = dict(data)
-
-    return web.Response(text=json.dumps(data), content_type="application/json")
 
 app = web.Application()
 app.add_routes([
+    # ADMIN
     web.get('/', index),
+    web.post('/', ooo),
+
+
+
+    # USER
     web.post('/getPosts', getPosts),
     web.post('/updateLikes', updateLikes),
 
-    web.post('/', ooo),
     web.post('/createUser', createUser),
     web.post('/updateUser', updateUser),
     web.post('/post', createPost)

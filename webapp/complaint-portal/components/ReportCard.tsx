@@ -39,6 +39,23 @@ export type Report = {
   }
 };
 
+
+function formatRelativeDate(dateString: string) {
+  const date = new Date(Number(dateString));
+  const now = new Date();
+  const differenceInMilliseconds = now.getTime() - date.getTime();
+  const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
+
+  let ret :string = "";
+  if (differenceInMilliseconds <= oneDayInMilliseconds) {
+      ret += date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } else {
+      // More than 24 hours ago, show date (e.g., "Jan 1, 2025")
+      ret += date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  return ret
+}
+
 interface ReportCardProps {
   report: Report;
   onVote: (updatedReport : Report, action: string) => void;
@@ -109,7 +126,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
         />
         <div>
           <p className="font-medium text-gray-800">{report.user.name}</p>
-          <p className="text-xs text-gray-500">{report.user.aadhaar}</p>
+          <p className="text-xs text-gray-500">{formatRelativeDate(report.dateOfCreation)}</p>
         </div>
       </div>
     </div>
