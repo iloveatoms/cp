@@ -19,3 +19,7 @@ Deploy the Server:
 ```
 
 Open [http://localhost:5000](http://localhost:5000) 😀
+Available at all interfaces
+
+Admin Panel:
+> Only @ [http://localhost:9999](http://localhost:9999)
