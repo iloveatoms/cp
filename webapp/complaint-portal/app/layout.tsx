@@ -1,19 +1,15 @@
-// "use client";
+
 
 import React from 'react'
 import Link from 'next/link'
 import { Poppins } from 'next/font/google'
-// import { useEffect,useState } from 'react'
+
 import './globals.css'
 const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
 })
-// const [myId,setMyId]=useState("")
-// useEffect(() => {
-//     setMyId(localStorage.getItem("userid") || "-1");
-//   },[])
-const myId:String="1234";
+
 export default function RootLayout({
   children,
 }: {
@@ -41,18 +37,6 @@ export default function RootLayout({
                   { href: '/complaint.html', label: 'Complaint' },
                   { href: '/login.html', label: 'Login' },
                 ].map((item) => {
-                  if(myId!="-1"){
-                    if(item.label=="Login"){
-                      return (
-                        <div className="flex items-center mt-4">
-                        <img
-                        src="/uploads/user.jpg"
-                        className="w-10 h-10 rounded-full mr-3"
-                          />
-                        </div>
-                      )
-                    }
-                  }
                   return(
                 
                   <li key={item.href}>
