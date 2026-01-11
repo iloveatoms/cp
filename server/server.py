@@ -62,7 +62,7 @@ async def register(request):
     data = dict(await request.json())
 
     # required = ["userid", "name", "password", "aadhar"]
-    
+
     # if not all(k in data for k in required):
     #     msg = {"error": "missing-fields"}
     #     return web.Response(text=json.dumps(msg), content_type="application/json", status=400)

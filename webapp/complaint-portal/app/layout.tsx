@@ -15,12 +15,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
 
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string>("");
 
   useEffect((): void => {
-    const storedUserId: string | null = localStorage.getItem("userId");
-    setUserId(storedUserId);
-  }, []); 
+    setUserId(localStorage.getItem("userId") || "-1");
+  }, []);
 
   return (
     <html lang="en">
@@ -39,8 +38,8 @@ export default function RootLayout({
               <li><Link href="/contact-us.html">Contact us</Link></li>
               <li><Link href="/complaint.html">Complaint portal</Link></li>
 
-            
-              {userId === null && (
+
+              {userId === "-1" && (
                 <li>
                   <Link
                     href="/login.html"

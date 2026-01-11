@@ -79,31 +79,31 @@ app.post(
   '/api/login',
   async (req, res) =>{
         let loginUser = {
-          userid: Number(req.body.aadhaar),
+          userid: Number(req.body.userid),
           password:req.body.password
         }
 
         res.contentType("application/json")
-  
+
         // POST to database.
         const resp = await fetch(dbHost + "/login", {
             method: "POST",
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body : JSON.stringify(loginUser)
           })
-        if (!resp.ok){ res.status(resp.status).json({error: 'Failed;;'}) }
-        const data = await resp.json()
+
+        const data = await resp.json();
 
         if (data["authenticated"] === false){
-          res.contentType("text/html");
-          res.status(201)
+          res.contentType("application/json");
+          res.status(200)
             .json({
             authenticated : false
           });
         }
-        else if(data["authenticated"] == true){
-          res.contentType("text/html");
-          res.status(201)
+        else if(data["authenticated"] === true){
+          res.contentType("application/json");
+          res.status(200)
            .send({
              authenticated : true,
              userid: loginUser.userid

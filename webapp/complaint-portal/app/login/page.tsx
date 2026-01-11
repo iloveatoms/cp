@@ -27,21 +27,22 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userid: aadhaar,
-          password:password,
+          password:password
         }),
-      })
+      });
 
-      const data = await res.json()
+      const data = await res.json();
 
       if (data.authenticated === true) {
-        localStorage.setItem("userid", aadhaar)
-        toast.success("Login successful")
-        window.location.replace(redirect)
-      } else {
-        toast.error("Wrong password. Try Again")
+        localStorage.setItem("userid", data.userid);
+        toast.success("Login successful");
+
+        setTimeout( ()=> {window.location.replace(redirect) }, 1000 )
+      } else if (data.authenticated === false)
+        { toast.error("Wrong password. Try Again") }
       }
-    } catch {
-      toast.error("Login failed")
+      catch {
+      toast.error("Network Error..")
     }
   }
 

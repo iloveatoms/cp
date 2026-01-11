@@ -34,6 +34,7 @@ class Users:
         try:
             meta = json.loads(meta)
             hashed = meta.get("password")
+
             if not hashed:
                 return False
             return verify_password(password, hashed)
