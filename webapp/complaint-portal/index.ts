@@ -2,7 +2,6 @@ import express, { Request, Response } from 'express'
 import path, { parse } from 'path'
 import multer from 'multer'
 import cors from 'cors'
-import bodyParser  from 'body-parser'
 import { randomBytes } from 'crypto'
 
 
@@ -30,30 +29,24 @@ const upload = multer({ dest: path.join(__dirname, '..', '..','uploads') })
 
 const app = express()
 app.use(cors())
-app.use(bodyParser.json())
+app.use(express.json())
 app.use(parseCookie)
-app.use(bodyParser.urlencoded({extended: true}))
+app.use(express.urlencoded({extended: true}))
 app.use(express.static(path.join(__dirname, 'build')))
 app.use(express.static(path.join(__dirname, '..', '..'))) //Root Dir
 
+app.post('/api/register',async(req,res)=>{
 
-app.post(
-  '/api/login',
-  async (req, res) =>{
-
-    // IF no cookie.sessionID
-    // THEN SET COOKIE & PROCEDE TO LOGIN
-    if(req.cookies.sessionID === undefined){
-      let sessionID = String(randomBytes(10));
+  let sessionID = String(randomBytes(10));
       res.cookie("sessionID", sessionID, {
         maxAge: 900000,
         httpOnly: true,
         sameSite: "strict"
         })
 
-        let createUser = {
+  let createUser = {
           userid: req.body.aadhaar,
-          name: "User" + req.body.aadhaar,
+          name: req.body.name,
           email: "--",
           phone: "--",
           aadhar: req.body.aadhaar.toString(),
@@ -71,36 +64,52 @@ app.post(
         res.contentType("application/json")
 
         // POST to database.
-        const resp = await fetch(dbHost + "/createUser", {
+        const resp = await fetch(dbHost + "/register", {
             method: "POST",
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body : JSON.stringify(createUser)
           })
+          if (resp.ok){
+        const data = await resp.json()
+        res.contentType("application/json")
+        res.status(resp.status).json({status:data.user})
+        }
+})
+app.post(
+  '/api/login',
+  async (req, res) =>{
+        let loginUser = {
+          userid: Number(req.body.aadhaar),
+          password:req.body.password
+        }
+
+        res.contentType("application/json")
+  
+        // POST to database.
+        const resp = await fetch(dbHost + "/login", {
+            method: "POST",
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body : JSON.stringify(loginUser)
+          })
         if (!resp.ok){ res.status(resp.status).json({error: 'Failed;;'}) }
         const data = await resp.json()
 
-        if (data["authenticated"] == "false"){
+        if (data["authenticated"] === false){
           res.contentType("text/html");
           res.status(201)
             .json({
             authenticated : false
           });
         }
-        else if(data["authenticated"] == "true" ){
+        else if(data["authenticated"] == true){
           res.contentType("text/html");
           res.status(201)
            .send({
-             body :
-             "<h1 style='text-aligh:center;font-size:100px;'>Complaint Portal :: \
-             Login Success</h1><script>localStorage.setItem('userid','" + createUser["userid"] + "'); setTimeout(()=> {window.location.href = '/';},3000)</script>",
              authenticated : true,
-             userid: createUser.aadhar
+             userid: loginUser.userid
           });
         }
     }
-
-    else{ res.redirect('/') }
-  }
 )
 
 app.get(
