@@ -69,11 +69,11 @@ app.post('/api/register',async(req,res)=>{
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body : JSON.stringify(createUser)
           })
-          if (resp.ok){
-        const data = await resp.json()
+
+        const data = await resp.json();
         res.contentType("application/json")
-        res.status(resp.status).json({status:data.user})
-        }
+        res.status(200).json({status:data.user})
+
 })
 app.post(
   '/api/login',
@@ -215,6 +215,10 @@ app.post('/api/updateLikes',
     });
   }
 )
+
+app.use((req, res) => {
+  res.status(404).redirect("/404.html");
+})
 
 const PORT = 5000
 const HOST = "0.0.0.0"

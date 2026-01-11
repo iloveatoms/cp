@@ -16,10 +16,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
 
-  const [userId, setUserId] = useState<string>("");
-
-  useEffect((): void => {
-    setUserId(localStorage.getItem("userId") || "-1");
+  const [userId, setUserId] = useState<string>("-1");
+  const [userProfileUrl, setUserProfileUrl] = useState("/uploads/user.jpg");
+  useEffect(()=> {
+    setUserId(localStorage.getItem("userid") || "-1");
+    setUserProfileUrl(localStorage.getItem("profileUrl") || "/uploads/user.jpg");
   }, []);
 
   return (
@@ -41,7 +42,9 @@ export default function RootLayout({
               <li><Link href="/complaint.html">Complaint portal</Link></li>
 
 
-              {userId === "-1" && (
+              {
+              userId == "-1"
+              ? (
                 <li>
                   <Link
                     href="/login.html"
@@ -50,7 +53,17 @@ export default function RootLayout({
                     Login
                   </Link>
                 </li>
-              )}
+              )
+              : (
+                <li>
+                  <img
+                    onClick={() => window.location.replace("/profile")}
+                    src={userProfileUrl}
+                    style={{marginLeft : "30px"}}
+                    className="w-10 h-10 rounded-full mr-3"/>
+                </li>
+              )
+              }
             </ul>
           </nav>
         </header>
