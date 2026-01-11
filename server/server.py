@@ -58,32 +58,64 @@ async def ooo(request):
 
 
 ## Web API
-async def createUser(request):
-    data = await request.json()
-    data = dict(data)
+async def register(request):
+    data = dict(await request.json())
 
-    if userdb.getUser(data["userid"])==None:
-        userdb.createUser(**data)
-        msg = {"user":"created"}
-    else:
-        msg = {"user":"exists"}
-        if data["meta"]["password"] in userdb.getValue(data["userid"], "meta"):
-            msg["authenticated"] = "true"
-        else:
-            msg["authenticated"] = "false"
+    # required = ["userid", "name", "password", "aadhar"]
+    
+    # if not all(k in data for k in required):
+    #     msg = {"error": "missing-fields"}
+    #     return web.Response(text=json.dumps(msg), content_type="application/json", status=400)
 
-    msg = json.dumps(msg)
-    return web.Response(text=msg, content_type="application/json")
+    if userdb.getUser(data["userid"]) is not None:
+        msg = {"user": "exists"}
+        return web.Response(text=json.dumps(msg), content_type="application/json", status=409)
+
+    data["meta"]["password"] = database.hash_password(data["meta"]["password"])
+
+    userdb.createUser(**data)
+
+    msg = {"user": "created"}
+    return web.Response(text=json.dumps(msg), content_type="application/json", status=201)
+
+async def login(request):
+    data = dict(await request.json())
+
+    userid = data.get("userid")
+    password = data.get("password")
+
+    msg = {"authenticated": False}
+
+    if not userid or not password:
+        return web.Response(text=json.dumps(msg), content_type="application/json", status=400)
+
+    if userdb.verifyPassword(userid, password):
+        msg["authenticated"] = True
+        return web.Response(text=json.dumps(msg), content_type="application/json")
+
+    return web.Response(text=json.dumps(msg), content_type="application/json", status=401)
+
 
 
 async def updateUser(request):
     data = dict(await request.json())
-    userid = data.get("userid", None)
-    if not userid:
-        return web.Response(status=301, text="No Operation", content_type="text/html")
+    userid = data.pop("userid", None)
 
-    for key in data:
-        userdb.setValue()
+    if not userid:
+        return web.Response(
+            status=301,
+            text="No Operation",
+            content_type="text/html"
+        )
+
+    for key, value in data.items():
+        userdb.setValue(userid, key, value)
+
+    return web.Response(
+        text=json.dumps({"status": "updated"}),
+        content_type="application/json"
+    )
+
 
 async def createPost(request):
     data = await request.json()
@@ -179,7 +211,9 @@ app.add_routes([
     web.post('/getPosts', getPosts),
     web.post('/updateLikes', updateLikes),
 
-    web.post('/createUser', createUser),
+    web.post("/register", register),
+    web.post("/login", login),
+
     web.post('/updateUser', updateUser),
     web.post('/post', createPost)
 ])

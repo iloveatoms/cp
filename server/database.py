@@ -1,11 +1,20 @@
 import sqlite3
 import json
 import os
+import bcrypt
+
+
+# ---------- Password Helpers ----------
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
+
 
 class Users:
     def __init__(self, dbPath: str):
         self.dbPath = dbPath
-
         if os.path.isfile(self.dbPath):
             self.conn = sqlite3.connect(self.dbPath)
 
@@ -13,9 +22,23 @@ class Users:
         self.conn.close()
 
     def _execute(self, command: str):
-        """Executes an SQL command and returns the result"""
         cur = self.conn.cursor()
         return cur.execute(command)
+
+    # ---------- AUTH ----------
+    def verifyPassword(self, userid: int, password: str) -> bool:
+        meta = self.getValue(userid, "meta")
+        if not meta:
+            return False
+
+        try:
+            meta = json.loads(meta)
+            hashed = meta.get("password")
+            if not hashed:
+                return False
+            return verify_password(password, hashed)
+        except Exception:
+            return False
 
     # ---------- Create ----------
     def createUser(
@@ -42,7 +65,8 @@ class Users:
         cur.execute(
             """
             INSERT INTO user
-            (userid, name, email, phone, aadhar, age, followers, following, credits, dateOfCreation, profileUrl, bio, meta, sessionid)
+            (userid, name, email, phone, aadhar, age, followers, following,
+             credits, dateOfCreation, profileUrl, bio, meta, sessionid)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
@@ -51,8 +75,8 @@ class Users:
                 profileUrl, bio, meta, sessionid
             )
         )
-        cur.close()
         self.conn.commit()
+        cur.close()
 
     # ---------- Get ----------
     def getUser(self, userid: int) -> dict | None:
@@ -99,8 +123,43 @@ class Users:
             f"UPDATE user SET {column} = ? WHERE userid = ?",
             (value, userid)
         )
-        cur.close()
         self.conn.commit()
+        cur.close()
+
+    # ---------- Delete ----------
+    def deleteUser(self, userid: int):
+        cur = self.conn.cursor()
+        cur.execute("DELETE FROM user WHERE userid = ?", (userid,))
+        self.conn.commit()
+        cur.close()
+
+    # ---------- List ----------
+    def getAllUsers(self) -> list[dict]:
+        cur = self.conn.cursor()
+        cur.execute("SELECT * FROM user")
+        rows = cur.fetchall()
+        cur.close()
+
+        return [
+            {
+                "userid": r[0],
+                "name": r[1],
+                "email": r[2],
+                "phone": r[3],
+                "aadhar": r[4],
+                "age": r[5],
+                "followers": r[6],
+                "following": r[7],
+                "credits": r[8],
+                "dateOfCreation": r[9],
+                "profileUrl": r[10],
+                "bio": r[11],
+                "meta": json.loads(r[12]) if r[12] else None,
+                "sessionid": r[13]
+            }
+            for r in rows
+        ]
+
 
     # ---------- Individual Setters ----------
     def setName(self, userid: int, name: str):
