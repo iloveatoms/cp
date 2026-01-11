@@ -38,7 +38,7 @@ export default function LoginPage() {
         toast.success("Login successful")
         window.location.replace(redirect)
       } else {
-        toast.error("Wrong password")
+        toast.error("Wrong password. Try Again")
       }
     } catch {
       toast.error("Login failed")
@@ -82,7 +82,7 @@ export default function LoginPage() {
             New user?{" "}
             <Link
               className="text-green-600 underline"
-              href={`/register?redirect=${encodeURIComponent(redirect)}`}
+              href="/register.html"
             >
               Register
             </Link>
