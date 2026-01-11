@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import {ToastContainer} from "react-toastify";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -27,6 +28,7 @@ export default function RootLayout({
         className={`${poppins.className} min-h-screen bg-[#F7F9FA] text-[#333333] flex flex-col antialiased`}
       >
         <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-[#A1D99B]">
+        <ToastContainer />
           <nav className="max-w-6xl mx-auto px-4 h-16 flex justify-between items-center">
             <Link href="/" className="text-2xl font-semibold text-[#2C6E49]">
               Complaint Portal

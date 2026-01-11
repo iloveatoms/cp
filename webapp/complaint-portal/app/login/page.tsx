@@ -36,7 +36,6 @@ export default function LoginPage() {
       if (data.authenticated === true) {
         localStorage.setItem("userid", data.userid);
         toast.success("Login successful");
-
         setTimeout( ()=> {window.location.replace(redirect) }, 1000 )
       } else if (data.authenticated === false)
         { toast.error("Wrong password. Try Again") }
