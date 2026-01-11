@@ -42,11 +42,12 @@ export default function RegisterPage() {
         }),
       })
 
-      if (res.ok) {
+      const data = await res.json();
+      if (data.status === "created") {
         localStorage.setItem("userid", form.aadhaar)
         toast.success("Registered successfully ")
-        window.location.href = redirect
-      } else {
+        setTimeout(()=>{window.location.href = redirect},1500)
+      } else if (data.status === "exists") {
         toast.error("User already exists")
       }
     } catch {
