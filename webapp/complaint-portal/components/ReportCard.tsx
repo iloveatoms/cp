@@ -65,13 +65,40 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
   let action : string;
 
   const handleLikes = (e: React.MouseEvent<HTMLButtonElement>) => {
-    action = "neutral";
+    action = "neutral"; // as 0, then if wont execute -> action=Neutral
+
+    const L = report.currentUser.postLiked;
+    const D = report.currentUser.postDisliked;
+    const C = ((e.target as HTMLButtonElement).getAttribute("button-type") === "btnLike") ? true : false;
     if (
-      !report.currentUser.postLiked &&
-      !report.currentUser.postDisliked
+      /**
+       *
+       * Click : Liked 1 , Disliked 0
+       * Action : Neutral 0, Proceed (As Click) 1
+       *
+       * L D C Action
+       * 0 0 0   1     // Action Click
+       * 0 0 1   1     // Action Click
+       *
+       * 0 1 0   0     // Neutral
+       * 0 1 1   1     // Action Click
+       *
+       * 1 0 0   1     // Action Click
+       * 1 0 1   0     // Neutral
+       *
+       * 1 1 0   1     // Not possible State from DB (Action Click)
+       * 1 1 1   1     // Not possible State from DB (Action Click)
+       *
+       *  F(A, B, C) = Σ( 0, 1, 3, 4, 6, 7)
+       *             = L'D' + LD + L'C + L'C
+       *             = ~(L⊕D) + L⊕C
+       *             = ~(L^D) | L^C
+       *
+       */
+      !(L!==D) || (L!==C)
     )
     {
-    action = ((e.target as HTMLButtonElement).getAttribute("button-type") === "btnLike") ? "liked" : "disliked";
+    action = C ? "liked" : "disliked";
     }
     onVote(report, action);
   };
@@ -101,7 +128,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
             👍
             <i className="fas fa-thumbs-up"></i>
           </button>
-          <span className="text-gray-700">{report.likes}</span>
+          <span className="text-gray-700" style={{ color : report.currentUser.postLiked ? "red" : "initial"}}>{report.likes}</span>
         </div>
         <div className="flex items-center space-x-1">
           <button
@@ -113,7 +140,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
             👎
             <i className="fas fa-thumbs-down"></i>
           </button>
-          <span className="text-gray-700">{report.dislikes}</span>
+          <span className="text-gray-700" style={{color : report.currentUser.postDisliked ? "red" : "initial"}} >{report.dislikes}</span>
         </div>
       </div>
 
