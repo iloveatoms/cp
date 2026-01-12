@@ -1,21 +1,37 @@
 "use client";
-import { useEffect, useState } from "react";
-import ReportCard from "@/components/ReportCard";
-import type { Report } from "@/lib/types";
-import {toast} from "react-toastify";
+import { MouseEventHandler, useEffect, useState } from "react";
+import { UserProfile, type Report } from "@/lib/types";
+import {toast, Zoom} from "react-toastify";
 import * as sys from "@/lib/fetch";
+import UserProfileModal from "@/components/UserProfileModal";
+import React from "react";
 
 export default function ReportsPage() {
   const [storedUserId, setUserId] = useState<number>(-1);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [userProfile, setProfile] = useState<UserProfile>()
+
+
+
+  const renderProfile = async () => {
+    setLoading(true);
+    try{
+      const data = await sys.fetchUserProfile(storedUserId, storedUserId);
+      setProfile(data)
+    } catch (err) {
+      toast.error(err instanceof Error ? "Network Error \n" + err.message : "Network Error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   const renderReports = async () => {
     setLoading(true);
 
     try{
-      const data = await sys.fetchReports(storedUserId, null, 10);
+      const data = await sys.fetchReports(storedUserId, storedUserId, 10);
       if (data.length > 0){
         setReports(data); //data is assumed type Report[]
       }
@@ -70,6 +86,23 @@ export default function ReportsPage() {
     updateLikes(updatedReport, action);
   };
 
+  function handleLogout(e : MouseEventHandler<HTMLButtonElement>){
+    localStorage.clear()
+    toast.info('🦄 Log-Out Successful', {
+      position: "top-center",
+      autoClose: 1000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: false,
+      draggable: true,
+      progress: undefined,
+      theme: "dark",
+      transition: Zoom,
+      });
+      setTimeout( ()=>window.location.replace("/") , 1000)
+  }
+
+
   useEffect(()=>{
     if(typeof window !== "undefined"){
       const tmp = localStorage.getItem("userid");
@@ -77,16 +110,18 @@ export default function ReportsPage() {
     }
   },[]);
 
+  useEffect(()=>{
+    renderProfile()
+  }, [storedUserId])
+
   useEffect(() => {
-    if(typeof window !== "undefined"){
       renderReports();
-    }
   }, [storedUserId]);
 
 
   if (loading) {
     return (
-      <div className="dark p-4 min-h-screen">
+      <div className="p-4 bg-green-50 min-h-screen">
         <div className="max-w-6xl mx-auto text-center">
           <h1 className="text-3xl font-bold text-green-800 mb-6">Loading...</h1>
         </div>
@@ -95,22 +130,13 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="dark p-4 min-h-screen">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-green-800 mb-6 text-center">
-          All Reports
-        </h1>
 
-        <div className="dark grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {reports.map((report) => (
-            <ReportCard
-              key={report.postid}
-              report={report}
-              onVote={handleVote}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
+      userProfile && (
+      <UserProfileModal
+      user={userProfile}
+      reports={reports}
+      onVote={handleVote}
+      />)
+
   );
 }

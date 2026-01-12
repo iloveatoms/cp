@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useEffect, useState, FormEvent } from "react"
 import { Card, CardContent } from "@/components/ui/card"

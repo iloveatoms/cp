@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "nodemon --exec \"ts-node --project tsconfig.backend.json\" index.ts",
     "build": "next build",
+    "dbuild" : "next build --debug-prerender",
     "start": "next start",
     "lint": "eslint"
   },

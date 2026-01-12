@@ -424,7 +424,7 @@ class Likes:
         self.conn = sqlite3.connect(self.dbPath)
 
     # ---------- Setters ----------
-    def setInteraction(self, userid: str, postid: str, action: str):
+    def setInteraction(self, userid: int, postid: str, action: str):
         """
         action: 'liked', 'disliked', or 'neutral'
         Counters are handled by triggers
@@ -452,7 +452,7 @@ class Likes:
         return (liked, disliked)
 
     # ---------- Getters (Posts) ----------
-    def getInteraction(self, userid: str, postid: str):
+    def getInteraction(self, userid: int, postid: str):
         cur = self.conn.execute(
             "SELECT * FROM likes WHERE postid = ? AND userid = ?",
             (postid, userid)
@@ -485,14 +485,14 @@ class Likes:
         return [r[0] for r in cur.fetchall()]
 
     # ---------- Getters (Users) ----------
-    def getLikedPostsByUser(self, userid: str) -> list[str]:
+    def getLikedPostsByUser(self, userid: int) -> list[str]:
         cur = self.conn.execute(
             "SELECT postid FROM likes WHERE userid = ? AND liked = 1",
             (userid,)
         )
         return [r[0] for r in cur.fetchall()]
 
-    def getDislikedPostsByUser(self, userid: str) -> list[str]:
+    def getDislikedPostsByUser(self, userid: int) -> list[str]:
         cur = self.conn.execute(
             "SELECT postid FROM likes WHERE userid = ? AND disliked = 1",
             (userid,)

@@ -130,8 +130,7 @@ async def createPost(request):
         msg = {"post":"exists"}
 
     msg = json.dumps(msg)
-    pp(data)
-    pp(msg)
+
     return web.Response(text=msg, content_type="application/json")
 
 async def updateLikes(request):
@@ -162,29 +161,60 @@ async def updateLikes(request):
     return web.Response(text=msg, content_type="application/json")
 
 
-async def getPosts(request):
+
+async def getUserProfile(request):
     data = await request.json()
     data = dict(data)
 
+    userid = data["userid"]
+    accessUserId = data["cuserid"]
+
+    # if (userid if private && cuserid follows userid) 😲
+
+    msg = userdb.getUser(userid)
+
+    if not msg:
+        msg = userdb.getUser(-1)
+
+    msg.pop("meta")
+    msg.pop("sessionid")
+
+    msg = json.dumps(msg)
+    return web.Response(text=msg, content_type="application/json")
+
+
+async def getPosts(request):
+    data = await request.json()
+    data = dict(data)
+    pp(data)
 
     accessUserId = data["userid"]
     postedBy = data["postUser"]
     postCount = data["count"]
 
-    posts =  postsdb.getAllPosts()[:postCount]
+    if postedBy == "*":
+        posts =  postsdb.getAllPosts()[:postCount]
+    else:
+        posts = postsdb.getAllPosts(postedBy)[:postCount]
+
     for i in range(len(posts)):
         postedUserProfile = userdb.getUser(posts[i]["userid"])
         if postedUserProfile:
-            postedUserProfile.pop("meta")
-            postedUserProfile.pop("sessionid")
+            posts[i]["user"] = postedUserProfile
+        else:
+            posts[i]["user"] = userdb.getUser(-1) # Deleted User = Admin 😂
+            posts[i]["user"]["name"] += "<sub>Deleted By Admin</sub>"
+            posts[i]["user"]["userid"] = posts[i]["userid"]
 
-        posts[i]["user"] = postedUserProfile
+        posts[i]["user"].pop("meta")
+        posts[i]["user"].pop("sessionid")
+
 
         accessUserProfile = {}
         accessUserProfile["userid"] = accessUserId
+        userPostInteraction = likesdb.getInteraction(accessUserId,posts[i]["postid"])
 
-        userPostInteraction = likesdb.getInteraction(posts[i]["postid"], accessUserId)
-        if accessUserId == "-1" or not userPostInteraction:
+        if accessUserId == -1 or not userPostInteraction:
             accessUserProfile["postLiked"] = False
             accessUserProfile["postDisliked"] = False
         else:
@@ -208,6 +238,7 @@ app.add_routes([
 
 
     # USER
+    web.post('/getUserProfile', getUserProfile),
     web.post('/getPosts', getPosts),
     web.post('/updateLikes', updateLikes),
 

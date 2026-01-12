@@ -16,19 +16,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
 
-  const [userId, setUserId] = useState<string>("-1");
+  const [userId, setUserId] = useState<number>(-1);
   const [userProfileUrl, setUserProfileUrl] = useState("/uploads/user.jpg");
   useEffect(()=> {
-    setUserId(localStorage.getItem("userid") || "-1");
+    setUserId(Number(localStorage.getItem("userid") || "-1"));
     setUserProfileUrl(localStorage.getItem("profileUrl") || "/uploads/user.jpg");
   }, []);
 
   return (
     <html lang="en">
       <body
-        className={`${poppins.className} min-h-screen bg-[#F7F9FA] text-[#333333] flex flex-col antialiased`}
+        className={`${poppins.className} min-h-screen dark flex flex-col antialiased`}
       >
-        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-[#A1D99B]">
+        <header className="sticky top-0 z-50 bg-dark/95 backdrop-blur border-b border-[#A1D99B]">
         <ToastContainer />
           <nav className="max-w-6xl mx-auto px-4 h-16 flex justify-between items-center">
             <Link href="/" className="text-2xl font-semibold text-[#2C6E49]">
@@ -37,17 +37,17 @@ export default function RootLayout({
 
             <ul className="flex gap-2 items-center">
               <li><Link href="/">Home</Link></li>
-              <li><Link href="/about.html">About</Link></li>
-              <li><Link href="/contact-us.html">Contact us</Link></li>
-              <li><Link href="/complaint.html">Complaint portal</Link></li>
+              <li><Link href="/about">About</Link></li>
+              <li><Link href="/contact-us">Contact us</Link></li>
+              <li><Link href="/complaint">Complaint portal</Link></li>
 
 
               {
-              userId == "-1"
+              (userId == -1)
               ? (
                 <li>
                   <Link
-                    href="/login.html"
+                    href="/login"
                     className="px-3 py-2 text-sm font-medium text-[#2C6E49]"
                   >
                     Login
@@ -56,11 +56,13 @@ export default function RootLayout({
               )
               : (
                 <li>
+                   <Link
+                   href="/profile">
                   <img
-                    onClick={() => window.location.replace("/profile")}
                     src={userProfileUrl}
                     style={{marginLeft : "30px"}}
                     className="w-10 h-10 rounded-full mr-3"/>
+                    </Link>
                 </li>
               )
               }
