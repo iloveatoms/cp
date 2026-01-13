@@ -69,7 +69,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
   };
 
   return (
-      <div className="dark p-4 rounded-lg shadow-md hover:shadow-xl transition-all flex flex-col h-full">
+      <div className="bg-grey-400 p-4 rounded-lg shadow-md hover:shadow-lg hover:shadow-green-400 transition-all flex flex-col h-full">
         {/* Image */}
         <img src={report.imageUrl}
           alt={report.title}
@@ -99,13 +99,12 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
               button-type="btnLike"
               button-active={report.currentUser.postLiked}
               onClick={handleLikes}
-              className="text-green-500 hover:text-green-700 focus:outline-none"
             >
               👍
             </button>
             <span
-              className="text-gray-700"
-              style={{ color: report.currentUser.postLiked ? "red" : "initial" }}
+              className="text-[#dddddd]"
+              style={{ color: report.currentUser.postLiked ? "green" : "initial" }}
             >
               {report.likes}
             </span>
@@ -116,12 +115,11 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
               button-type="btnDislike"
               button-active={report.currentUser.postDisliked}
               onClick={handleLikes}
-              className="text-red-500 hover:text-red-700 focus:outline-none"
             >
               👎
             </button>
             <span
-              className="text-gray-700"
+              className="text-[#dddddd]"
               style={{ color: report.currentUser.postDisliked ? "red" : "initial" }}
             >
               {report.dislikes}
