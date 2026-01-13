@@ -60,7 +60,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
        *             = ~(L^D) | L^C
        *
        */
-      !(L!==D) || (L!==C)
+      (L===D) || (L!==C)
     )
     {
     action = C ? "liked" : "disliked";
