@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {toast} from "react-toastify"
 
 export default function ComplaintReportForm() {
 
@@ -28,10 +29,10 @@ export default function ComplaintReportForm() {
 
 
   useEffect(() => {
-    const storedUserId = localStorage.getItem("userid") || "-1";
+    const storedUserId = Number(localStorage.getItem("userid") || "-1");
     setFormData((prev) => ({
       ...prev,
-      aadhaar: storedUserId,
+      aadhaar: String(storedUserId)
     }));
 
   }, []);
@@ -59,6 +60,10 @@ export default function ComplaintReportForm() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if(formData.aadhaar == "-1"){
+      toast.error("Please Login to upload a complaint.")
+    }
+
     // Validation
     if (
       !formData.title ||
@@ -66,12 +71,12 @@ export default function ComplaintReportForm() {
       !formData.location ||
       !formData.category
     ) {
-      alert("Please fill all required fields.\n" + (!formData.aadhaar ? "Please Login to upload a complaint." : ""));
+      toast.error("Please fill all required fields.\n");
       return;
     }
 
     if (formData.aadhaar == "-1") {
-      alert("User not logged in. Please log in first.");
+      toast.error("User not logged in. Please log in first.");
       return;
     }
 
@@ -82,7 +87,7 @@ export default function ComplaintReportForm() {
     if (formData.image) {
       data.append("image", formData.image);
     }
-    data.append("aadhaar", formData.aadhaar.toString());
+    data.append("aadhaar", formData.aadhaar);
     data.append("title", formData.title);
     data.append("description", formData.description);
     data.append("location", formData.location);
@@ -96,12 +101,12 @@ export default function ComplaintReportForm() {
       });
 
       const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.message || "Failed to submit complaint");
-      }
 
-      // Success feedback
-      alert("Complaint submitted successfully!");
+      if(result["post"] === "created"){
+        toast.success("Complaint Received Successfully.")
+      }else if(result["user"] === "not-found"){
+        toast.error("Wrong User ID. Please Login Again.")
+      }
 
       // Reset form data
       setFormData({
@@ -121,8 +126,8 @@ export default function ComplaintReportForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F9FA] flex items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-2xl rounded-3xl border border-[#E1F1E4] shadow-[0_30px_70px_rgba(0,0,0,0.08)] bg-white">
+    <div className="dark min-h-screen flex items-center justify-center px-4 py-12">
+      <Card className="w-full max-w-2xl rounded-3xl border border-[#E1F1E4] shadow-[0_30px_70px_rgba(0,0,0,0.08)] bg-dark">
         <CardContent className="p-8 space-y-8">
           <div className="text-center space-y-2">
             <p className="text-xs uppercase tracking-[0.3em] text-[#007ACC]">
@@ -143,7 +148,7 @@ export default function ComplaintReportForm() {
                 type="text"
                 name="aadhaar"
                 value={formData.aadhaar == "-1" ? "Login First" : formData.aadhaar}
-                className="rounded-2xl border border-[#E1F1E4] bg-white text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
+                className="rounded-2xl border border-[#E1F1E4] bg-dark text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
                 readOnly // Aadhaar should not be edited directly by the user
               />
               <Input
@@ -151,7 +156,7 @@ export default function ComplaintReportForm() {
                 name="image"
                 accept="image/*"
                 onChange={handleChange}
-                className="rounded-2xl border border-[#E1F1E4] bg-white text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
+                className="rounded-2xl border border-[#E1F1E4] bg-dark text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
               />
             </div>
 
@@ -164,7 +169,7 @@ export default function ComplaintReportForm() {
                 value={formData.title}
                 onChange={handleChange}
                 required
-                className="rounded-2xl border border-[#E1F1E4] bg-white text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
+                className="rounded-2xl border border-[#E1F1E4] bg-dark text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
               />
             </div>
 
@@ -177,7 +182,7 @@ export default function ComplaintReportForm() {
                 onChange={handleChange}
                 rows={4}
                 required
-                className="rounded-2xl border border-[#E1F1E4] bg-white text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
+                className="rounded-2xl border border-[#E1F1E4] bg-dark text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
               />
             </div>
 
@@ -190,7 +195,7 @@ export default function ComplaintReportForm() {
                 value={formData.location}
                 onChange={handleChange}
                 required
-                className="rounded-2xl border border-[#E1F1E4] bg-white text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
+                className="rounded-2xl border border-[#E1F1E4] bg-dark text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
               />
             </div>
 
@@ -200,7 +205,7 @@ export default function ComplaintReportForm() {
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-[#E1F1E4] bg-white px-4 py-2 text-sm text-[#333333] focus:outline-none focus:ring-2 focus:ring-[#A1D99B]"
+                className="w-full rounded-2xl border border-[#E1F1E4] bg-dark px-4 py-2 text-sm text-[#333333] focus:outline-none focus:ring-2 focus:ring-[#A1D99B]"
                 required
               >
                 <option value="">Select category</option>

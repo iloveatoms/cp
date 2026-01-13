@@ -5,8 +5,8 @@ CREATE TABLE user (
     phone TEXT,
     aadhar TEXT NOT NULL,
     age INTEGER,
-    followers TEXT,
-    following TEXT,
+    followers INTEGER DEFAULT 0,
+    following INTEGER DEFAULT 0,
     credits INTEGER DEFAULT 0,
     dateOfCreation TEXT,
     profileUrl text,
@@ -32,7 +32,7 @@ CREATE TABLE post (
 );
 
 CREATE TABLE likes (
-    userid TEXT NOT NULL REFERENCES user(userid)
+    userid INTEGER NOT NULL REFERENCES user(userid)
         ON UPDATE CASCADE ON DELETE CASCADE,
     postid TEXT NOT NULL REFERENCES post(postid)
         ON UPDATE CASCADE ON DELETE CASCADE,

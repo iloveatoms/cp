@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useEffect, useState, FormEvent } from "react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -34,7 +34,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.authenticated === true) {
-        localStorage.setItem("userid", data.userid);
+        localStorage.setItem("userid", String(data.userid));
         toast.success("Login successful");
         setTimeout( ()=> {window.location.replace(redirect) }, 1000 )
       } else if (data.authenticated === false)
@@ -47,7 +47,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F7F9FA]">
-      <Card className="w-full max-w-md bg-white shadow-xl rounded-2xl">
+      <Card className="w-full max-w-md bg-dark shadow-xl rounded-2xl">
         <CardContent className="p-8 space-y-6">
           <h2 className="text-3xl font-semibold text-center text-[#2C6E49]">
             User Login
@@ -82,7 +82,7 @@ export default function LoginPage() {
             New user?{" "}
             <Link
               className="text-green-600 underline"
-              href="/register.html"
+              href="/register"
             >
               Register
             </Link>

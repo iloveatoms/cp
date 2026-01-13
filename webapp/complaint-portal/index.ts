@@ -33,7 +33,7 @@ app.use(express.json())
 app.use(parseCookie)
 app.use(express.urlencoded({extended: true}))
 app.use(express.static(path.join(__dirname, 'build')))
-app.use(express.static(path.join(__dirname, '..', '..'))) //Root Dir
+app.use("/uploads",express.static(path.join(__dirname, '..', '..',"uploads"))) //Root Dir
 
 app.post('/api/register',async(req,res)=>{
 
@@ -69,11 +69,11 @@ app.post('/api/register',async(req,res)=>{
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body : JSON.stringify(createUser)
           })
-          if (resp.ok){
-        const data = await resp.json()
+
+        const data = await resp.json();
         res.contentType("application/json")
-        res.status(resp.status).json({status:data.user})
-        }
+        res.status(200).json({status:data.user})
+
 })
 app.post(
   '/api/login',
@@ -155,10 +155,11 @@ app.post(
     const data = await resp.json()
 
     res.status(201).json({
-        message: function(){
-          if(data["user"] == "not-found"){ return "Please Login First."}
-          else if(data["post"] == "created"){ return "Complaint Received."}
-        }()
+      ...data,
+      message: function(){
+        if(data["user"] == "not-found"){ return "Please Login First."}
+        else if(data["post"] == "created"){ return "Complaint Received."}
+      }()
     })
 
    }
@@ -179,11 +180,30 @@ app.post('/api/getPosts',
       if (!response.ok) { throw new Error("Failed to fetch reports."); }
 
       let data = await response.json();
+      console.log(data);
       res.contentType('application/json');
       res.status(200).json(data)
     }
 )
 
+app.post('/api/getUserProfile',
+  async (req, res) => {
+      const response = await fetch(dbHost + "/getUserProfile", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(req.body)
+      });
+
+      if (!response.ok) { throw new Error("Failed to fetch reports."); }
+
+      let data = await response.json();
+      console.log(data);
+      res.contentType('application/json');
+      res.status(200).json(data)
+    }
+)
 
 app.post('/api/updateLikes',
   async (req, res) => {
@@ -203,7 +223,7 @@ app.post('/api/updateLikes',
 
       // type Report.currentUser
       currentUser : {
-        userid : Number(req.body.userid),
+        userid : req.body.userid,
         postLiked : data["currentUser"]["liked"],
         postDisliked : data["currentUser"]["disliked"]
       },
@@ -215,6 +235,10 @@ app.post('/api/updateLikes',
     });
   }
 )
+
+app.use((req, res) => {
+  res.status(404).redirect("/404.html");
+})
 
 const PORT = 5000
 const HOST = "0.0.0.0"
