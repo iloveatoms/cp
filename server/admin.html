@@ -5,26 +5,119 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Myna API</title>
   <style>
-    table{
-      border: 2px solid black;
-      border-collapse: collapse;
-      width: 100%;
-      margin : 20px 10px;
-    }
-    .field, .value{
-      text-align: center;
-      justify-content: center;
-      border : 2px solid black;
-      padding:5px 10px;
-    }
-    .field{
-      border-bottom: 3px solid rgb(93, 93, 93) ;
-    }
-    .row{
-      text-align: center;
-      color: red;
-      width: fit-content;
-    }
+ /* ===== RESET ===== */
+* {
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* ===== BODY ===== */
+body {
+  margin: 0;
+  background: #020617;
+  color: #ecfdf5;
+  overflow-x: hidden;
+}
+
+/* ===== HEADERS ===== */
+h1 {
+  color: #ecfdf5;
+  margin: 20px 0 5px;
+}
+
+h3 {
+  color: #34d399;
+  letter-spacing: 2px;
+}
+
+/* ===== NAV BUTTONS ===== */
+.nav {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.nav button {
+  background: #022c22;
+  color: #d1fae5;
+  border: 1px solid #064e3b;
+  padding: 10px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav button:hover {
+  background: #10b981;
+  color: #022c22;
+}
+
+.nav button:active {
+  transform: scale(0.95);
+}
+
+/* ===== CONTAINER ===== */
+#container {
+  width: 100%;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+/* ===== TABLE ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #020617;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+}
+
+/* ===== TABLE HEADERS ===== */
+.field {
+  background: #022c22;
+  color: #34d399;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.field:hover {
+  background: #064e3b;
+  color: #ecfdf5;
+}
+
+/* ===== TABLE CELLS ===== */
+.value {
+  color: #d1fae5;
+}
+
+/* ===== ROW HOVER ===== */
+.row:hover .value {
+  background: #022c22;
+}
+
+/* ===== BORDERS & PADDING ===== */
+.field,
+.value {
+  border: 1px solid #064e3b;
+  padding: 10px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ===== SCROLLBAR ===== */
+#container::-webkit-scrollbar {
+  height: 8px;
+}
+
+#container::-webkit-scrollbar-thumb {
+  background: #10b981;
+  border-radius: 8px;
+}
+
+#container::-webkit-scrollbar-track {
+  background: #020617;
+}
+
   </style>
 </head>
 <body>
