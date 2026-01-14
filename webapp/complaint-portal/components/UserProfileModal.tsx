@@ -2,6 +2,8 @@
 
 import { UserProfile, Report } from "@/lib/types";
 import ReportCard  from "./ReportCard";
+import { Button } from "./ui/button";
+import { toast } from "react-toastify";
 
 type Props = {
   user: UserProfile;
@@ -10,6 +12,7 @@ type Props = {
 };
 
 export default function UserProfileModal({ user, reports, onVote }: Props) {
+
   return (
     <div className="fixed inset-0 z-50 flex bg-black/30 backdrop-blur-sm dark">
 
@@ -28,6 +31,14 @@ export default function UserProfileModal({ user, reports, onVote }: Props) {
           <p><strong>Followers:</strong> {user.followers}</p>
           <p><strong>Following:</strong> {user.following}</p>
           <p><strong>Credits:</strong> {user.credits}</p>
+          <Button onClick={
+            ()=>{
+              localStorage.clear();
+              toast.info("Log-Out successful");
+              setTimeout(()=>{window.location.replace("/")},1500);
+            }}>
+            Logout
+          </Button>
         </div>
       </div>
 

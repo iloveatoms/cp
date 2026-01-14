@@ -1,4 +1,4 @@
-import sqlite3
+import aiosqlite as sqlite3
 import json
 import os
 import bcrypt
@@ -12,22 +12,34 @@ def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
 
-class Users:
+class Connection:
     def __init__(self, dbPath: str):
         self.dbPath = dbPath
-        if os.path.isfile(self.dbPath):
-            self.conn = sqlite3.connect(self.dbPath)
+        self._conn = None
 
-    def _close(self):
-        self.conn.close()
+    async def initConnection(self):
+        self._conn = await sqlite3.connect(self.dbPath)
+        return True
 
-    def _execute(self, command: str):
-        cur = self.conn.cursor()
-        return cur.execute(command)
+    async def _close(self):
+        await self._conn.close()
+
+    async def cursor(self):
+        return await self._conn.cursor()
+
+    async def commit(self):
+        await self._conn.commit()
+
+
+
+
+class User(Connection):
+    def __init__(self, dbPath):
+        super().__init__(dbPath)
 
     # ---------- AUTH ----------
-    def verifyPassword(self, userid: int, password: str) -> bool:
-        meta = self.getValue(userid, "meta")
+    async def verifyPassword(self, userid: int, password: str) -> bool:
+        meta = await self.getValue(userid, "meta")
         if not meta:
             return False
 
@@ -42,18 +54,18 @@ class Users:
             return False
 
     # ---------- Create ----------
-    def createUser(
+    async def createUser(
         self,
         userid: int,
         name: str,
         email: str = '',
         phone: str = '',
         aadhar: str = '',
-        age: int = None,
-        followers: str = '',
-        following: str = '',
+        age: int = 0,
+        followers: int = 0,
+        following: int = 0,
         credits: int = 0,
-        dateOfCreation: str = '',
+        dateOfCreation: int = 0,
         profileUrl: str = '',
         bio: str = '',
         meta: dict | str = None,
@@ -62,8 +74,8 @@ class Users:
         if isinstance(meta, dict):
             meta = json.dumps(meta)
 
-        cur = self.conn.cursor()
-        cur.execute(
+        cur = await self.cursor()
+        await cur.execute(
             """
             INSERT INTO user
             (userid, name, email, phone, aadhar, age, followers, following,
@@ -76,15 +88,15 @@ class Users:
                 profileUrl, bio, meta, sessionid
             )
         )
-        self.conn.commit()
-        cur.close()
+        await cur.close()
+        await self.commit()
 
     # ---------- Get ----------
-    def getUser(self, userid: int) -> dict | None:
-        cur = self.conn.cursor()
-        cur.execute("SELECT * FROM user WHERE userid = ?", (userid,))
-        row = cur.fetchone()
-        cur.close()
+    async def getUser(self, userid: int) -> dict | None:
+        cur = await self.cursor()
+        await cur.execute("SELECT * FROM user WHERE userid = ?", (userid,))
+        row = await cur.fetchone()
+        await cur.close()
 
         if not row:
             return None
@@ -107,39 +119,40 @@ class Users:
         }
 
     # ---------- Generic Column Get ----------
-    def getValue(self, userid: int, column: str):
-        cur = self.conn.cursor()
-        cur.execute(f"SELECT {column} FROM user WHERE userid = ?", (userid,))
-        value = cur.fetchone()
-        cur.close()
+    async def getValue(self, userid: int, column: str):
+        cur = await self._conn.cursor()
+        await cur.execute(f"SELECT {column} FROM user WHERE userid = ?", (userid,))
+        value = await cur.fetchone()
+        await cur.close()
+
         return value[0] if value else None
 
     # ---------- Generic Column Set ----------
-    def setValue(self, userid: int, column: str, value):
+    async def setValue(self, userid: int, column: str, value):
         if column == "meta" and isinstance(value, dict):
             value = json.dumps(value)
 
-        cur = self.conn.cursor()
-        cur.execute(
+        cur = await self.cursor()
+        await cur.execute(
             f"UPDATE user SET {column} = ? WHERE userid = ?",
             (value, userid)
         )
-        self.conn.commit()
-        cur.close()
+        await cur.close()
+        await self.commit()
 
     # ---------- Delete ----------
-    def deleteUser(self, userid: int):
-        cur = self.conn.cursor()
-        cur.execute("DELETE FROM user WHERE userid = ?", (userid,))
-        self.conn.commit()
-        cur.close()
+    async def deleteUser(self, userid: int):
+        cur = await self.cursor()
+        await cur.execute("DELETE FROM user WHERE userid = ?", (userid,))
+        await cur.close()
+        await self.commit()
 
     # ---------- List ----------
-    def getAllUsers(self) -> list[dict]:
-        cur = self.conn.cursor()
-        cur.execute("SELECT * FROM user")
-        rows = cur.fetchall()
-        cur.close()
+    async def getAllUsers(self) -> list[dict]:
+        cur = await self.cursor()
+        await cur.execute("SELECT * FROM user")
+        rows = await cur.fetchall()
+        await cur.close()
 
         return [
             {
@@ -163,77 +176,59 @@ class Users:
 
 
     # ---------- Individual Setters ----------
-    def setName(self, userid: int, name: str):
-        self.setValue(userid, "name", name)
+    async def setName(self, userid: int, name: str):
+        await self.setValue(userid, "name", name)
 
-    def setEmail(self, userid: int, email: str):
-        self.setValue(userid, "email", email)
+    async def setEmail(self, userid: int, email: str):
+        await self.setValue(userid, "email", email)
 
-    def setPhone(self, userid: int, phone: str):
-        self.setValue(userid, "phone", phone)
+    async def setPhone(self, userid: int, phone: str):
+        await self.setValue(userid, "phone", phone)
 
-    def setAadhar(self, userid: int, aadhar: str):
-        self.setValue(userid, "aadhar", aadhar)
+    async def setAadhar(self, userid: int, aadhar: str):
+        await self.setValue(userid, "aadhar", aadhar)
 
-    def setAge(self, userid: int, age: int):
-        self.setValue(userid, "age", age)
+    async def setAge(self, userid: int, age: int):
+        await self.setValue(userid, "age", age)
 
-    def setProfileUrl(self, userid: int, profileUrl: str):
-        self.setValue(userid, "profileUrl", profileUrl)
+    async def setProfileUrl(self, userid: int, profileUrl: str):
+        await self.setValue(userid, "profileUrl", profileUrl)
 
-    def setBio(self, userid: int, bio: str):
-        self.setValue(userid, "bio", bio)
+    async def setBio(self, userid: int, bio: str):
+        await self.setValue(userid, "bio", bio)
 
-    def setSessionId(self, userid: int, sessionid: str):
-        self.setValue(userid, "sessionid", sessionid)
+    async def setSessionId(self, userid: int, sessionid: str):
+        await self.setValue(userid, "sessionid", sessionid)
 
-    def addFollower(self, userid: int, followerId: int):
-        followers = self.getValue(userid, "followers") or ''
-        self.setValue(userid, "followers", f'{followers};{followerId}')
 
-        following = self.getValue(followerId, "following") or ''
-        self.setValue(followerId, "following", f'{following};{userid}')
+    # TODO: USE SQL RELATIONS followers<-->user
+    # async def addFollower(self, userid: int, followerId: int)
+    # async def removeFollower(self, userid: int, followerId: int)
 
-    def removeFollower(self, userid: int, followerId: int):
-        followers = self.getValue(userid, "followers") or ''
-        if followers:
-            followers = followers.split(';')
-            followers.remove(str(followerId))
-            followers = ";".join(followers)
 
-            self.setValue(userid, "followers", followers)
+    # TODO: auto calculate from posts
+    async def setCredits(self, userid: int, credits: int):
+        await self.setValue(userid, "credits", credits)
 
-        following = self.getValue(followerId, "following") or ''
-        if following:
-            following = following.split(';')
-            following.remove(str(userid))
-            following = ";".join(following)
+    async def addCredits(self, userid: int, amount: int):
+        current = await self.getValue(userid, "credits") or 0
+        await self.setCredits(userid, current + amount)
 
-            self.setValue(followerId, "following", following)
-
-    def setCredits(self, userid: int, credits: int):
-        self.setValue(userid, "credits", credits)
-
-    def addCredits(self, userid: int, amount: int):
-        current = self.getValue(userid, "credits") or 0
-        self.setCredits(userid, current + amount)
-
-    def setMeta(self, userid: int, meta: dict):
-        self.setValue(userid, "meta", meta)
+    async def setMeta(self, userid: int, meta: dict):
+        await self.setValue(userid, "meta", meta)
 
     # ---------- Delete ----------
-    def deleteUser(self, userid: int):
-        cur = self.conn.cursor()
-        cur.execute("DELETE FROM user WHERE userid = ?", (userid,))
-        self.conn.commit()
-        cur.close()
+    async def deleteUser(self, userid: int):
+        cur = await self.cursor()
+        await cur.execute("DELETE FROM user WHERE userid = ?", (userid,))
+        await cur.close()
 
     # ---------- List ----------
-    def getAllUsers(self) -> list[dict]:
-        cur = self.conn.cursor()
-        cur.execute("SELECT * FROM user")
-        rows = cur.fetchall()
-        cur.close()
+    async def getAllUsers(self) -> list[dict]:
+        cur = await self.cursor()
+        await cur.execute("SELECT * FROM user")
+        rows = await cur.fetchall()
+        await cur.close()
 
         return [
             {
@@ -255,27 +250,16 @@ class Users:
             for r in rows
         ]
 
-class Posts:
-    def __init__(self, dbPath: str):
-        self.dbPath = dbPath
-
-        if os.path.isfile(self.dbPath):
-            self.conn = sqlite3.connect(self.dbPath)
-
-    def _close(self):
-        self.conn.close()
-
-    def _execute(self, command: str):
-        """Executes an SQL command and returns the result"""
-        cur = self.conn.cursor()
-        return cur.execute(command)
+class Post(Connection):
+    def __init__(self, dbPath):
+        super().__init__(dbPath)
 
     # ---------- Create ----------
-    def createPost(
+    async def createPost(
         self,
-        postid: str,
+        postid: int,
         userid: int,
-        dateOfCreation: str,
+        dateOfCreation: int,
         title: str = '',
         text: str = '',
         imageUrl: str = '',
@@ -287,8 +271,8 @@ class Posts:
         if isinstance(meta, dict):
             meta = json.dumps(meta)
 
-        cur = self.conn.cursor()
-        cur.execute(
+        cur = await self._conn.cursor()
+        await cur.execute(
             """
             INSERT INTO post
             (postid, userid, dateOfCreation, title, text, imageUrl, meta, likes, dislikes, credits)
@@ -299,15 +283,15 @@ class Posts:
                 meta, likes, dislikes, credits
             )
         )
-        cur.close()
-        self.conn.commit()
+        await cur.close()
+        await self.commit()
 
     # ---------- Get ----------
-    def getPost(self, postid: str) -> dict | None:
-        cur = self.conn.cursor()
-        cur.execute("SELECT * FROM post WHERE postid = ?", (postid,))
-        row = cur.fetchone()
-        cur.close()
+    async def getPost(self, postid: int) -> dict | None:
+        cur = await self._conn.cursor()
+        await cur.execute("SELECT * FROM post WHERE postid = ?", (postid,))
+        row = await cur.fetchone()
+        await cur.close()
 
         if not row:
             return None
@@ -326,70 +310,71 @@ class Posts:
         }
 
     # ---------- Generic Column Get ----------
-    def getValue(self, postid: str, column: str):
-        cur = self.conn.cursor()
-        cur.execute(f"SELECT {column} FROM post WHERE postid = ?", (postid,))
-        value = cur.fetchone()
-        cur.close()
+    async def getValue(self, postid: int, column: str):
+        cur = await self._conn.cursor()
+        await cur.execute(f"SELECT {column} FROM post WHERE postid = ?", (postid,))
+        value = await cur.fetchone()
+        await cur.close()
         return value[0] if value else None
 
     # ---------- Generic Column Set ----------
-    def setValue(self, postid: str, column: str, value):
+    async def setValue(self, postid: int, column: str, value):
         if column == "meta" and isinstance(value, dict):
             value = json.dumps(value)
 
-        cur = self.conn.cursor()
-        cur.execute(
+        cur = await self._conn.cursor()
+        await cur.execute(
             f"UPDATE post SET {column} = ? WHERE postid = ?",
             (value, postid)
         )
-        cur.close()
-        self.conn.commit()
+        await cur.close()
+        await self.commit()
 
     # ---------- Individual Setters ----------
-    def setTitle(self, postid: str, title: str):
-        self.setValue(postid, "title", title)
+    async def setTitle(self, postid: int, title: str):
+        await self.setValue(postid, "title", title)
 
-    def setText(self, postid: str, text: str):
-        self.setValue(postid, "text", text)
+    async def setText(self, postid: int, text: str):
+        await self.setValue(postid, "text", text)
 
-    def setImageUrl(self, postid: str, imageUrl: str):
-        self.setValue(postid, "imageUrl", imageUrl)
+    async def setImageUrl(self, postid: int, imageUrl: str):
+        await self.setValue(postid, "imageUrl", imageUrl)
 
-    def setMeta(self, postid: str, meta: dict):
-        self.setValue(postid, "meta", meta)
+    async def setMeta(self, postid: int, meta: dict):
+        await self.setValue(postid, "meta", meta)
 
-    def setLikes(self, postid: str, likes: int):
-        self.setValue(postid, "likes", likes)
+    async def setLikes(self, postid: int, likes: int):
+        await self.setValue(postid, "likes", likes)
 
-    def setDislikes(self, postid: str, dislikes: int):
-        self.setValue(postid, "dislikes", dislikes)
+    async def setDislikes(self, postid: int, dislikes: int):
+        await self.setValue(postid, "dislikes", dislikes)
 
-    def setCredits(self, postid: str, credits: int):
-        self.setValue(postid, "credits", credits)
+    async def setCredits(self, postid: int, credits: int):
+        await self.setValue(postid, "credits", credits)
 
-    def addLikes(self, postid: str, count: int = 1):
-        current = self.getValue(postid, "likes") or 0
-        self.setLikes(postid, current + count)
+    async def addLikes(self, postid: int, count: int = 1):
+        current = await self.getValue(postid, "likes") or 0
+        await self.setLikes(postid, current + count)
 
-    def addDislikes(self, postid: str, count: int = 1):
-        current = self.getValue(postid, "dislikes") or 0
-        self.setDislikes(postid, current + count)
+    async def addDislikes(self, postid: int, count: int = 1):
+        current = await self.getValue(postid, "dislikes") or 0
+        await self.setDislikes(postid, current + count)
 
-    def addCredits(self, postid: str, amount: int):
-        current = self.getValue(postid, "credits") or 0
-        self.setCredits(postid, current + amount)
+    #TODO: autoclaculate
+    # async def addCredits(self, postid: int, amount: int):
+    #     current = await self.getValue(postid, "credits") or 0
+    #     await self.setCredits(postid, current + amount)
 
     # ---------- Delete ----------
-    def deletePost(self, postid: str):
-        cur = self.conn.cursor()
-        cur.execute("DELETE FROM post WHERE postid = ?", (postid,))
-        self.conn.commit()
-        cur.close()
+    async def deletePost(self, postid: int):
+        cur = await self.cursor()
+        await cur.execute("DELETE FROM post WHERE postid = ?", (postid,))
+        await cur.close()
+        await self.commit()
 
     # ---------- List ----------
-    def getAllPosts(self, userid: int = None) -> list[dict]:
-        cur = self.conn.cursor()
+    async def getAllPosts(self, userid: int = None) -> list[dict]:
+        cur = await self.cursor()
         query = "SELECT * FROM post"
         params = ()
 
@@ -397,9 +382,11 @@ class Posts:
             query += " WHERE userid = ?"
             params = (userid,)
 
-        cur.execute(query, params)
-        rows = cur.fetchall()
-        cur.close()
+            print(query, params)
+
+        await cur.execute(query, params)
+        rows = await cur.fetchall()
+        await cur.close()
 
         return [
             {
@@ -418,13 +405,12 @@ class Posts:
         ]
 
 
-class Likes:
-    def __init__(self, dbPath: str):
-        self.dbPath = dbPath
-        self.conn = sqlite3.connect(self.dbPath)
+class Likes(Connection):
+    def __init__(self, dbPath):
+        super().__init__(dbPath)
 
     # ---------- Setters ----------
-    def setInteraction(self, userid: int, postid: str, action: str):
+    async def setInteraction(self, userid: int, postid: int, action: str) -> (int, int):
         """
         action: 'liked', 'disliked', or 'neutral'
         Counters are handled by triggers
@@ -432,12 +418,12 @@ class Likes:
         liked = 1 if action == "liked" else 0
         disliked = 1 if action == "disliked" else 0
         if action == "neutral":
-            self.conn.execute(
+            await self._conn.execute(
                 "DELETE FROM likes WHERE userid = ? AND postid = ?",
                 (userid, postid)
             )
         else:
-            self.conn.execute(
+            await self._conn.execute(
                 """
                 INSERT INTO likes (userid, postid, liked, disliked)
                 VALUES (?, ?, ?, ?)
@@ -447,18 +433,18 @@ class Likes:
                 """,
                 (userid, postid, liked, disliked)
             )
-        self.conn.commit()
 
+        await self.commit()
         return (liked, disliked)
 
     # ---------- Getters (Posts) ----------
-    def getInteraction(self, userid: int, postid: str):
-        cur = self.conn.execute(
+    async def getInteraction(self, userid: int, postid: int):
+        cur = await self._conn.execute(
             "SELECT * FROM likes WHERE postid = ? AND userid = ?",
             (postid, userid)
         )
-        row = cur.fetchone()
-        cur.close()
+        row = await cur.fetchone()
+        await cur.close()
 
         if not row:
             return None
@@ -470,42 +456,42 @@ class Likes:
             "disliked" : bool(row[3])
             }
 
-    def getLikesFromPost(self, postid: str) -> list[str]:
-        cur = self.conn.execute(
+    async def getLikesOfPost(self, postid: int) -> list[int]:
+        cur = await self._conn.execute(
             "SELECT userid FROM likes WHERE postid = ? AND liked = 1",
             (postid,)
         )
-        return [r[0] for r in cur.fetchall()]
+        return [r[0] for r in await cur.fetchall()]
 
-    def getDislikesFromPost(self, postid: str) -> list[str]:
-        cur = self.conn.execute(
+    async def getDislikesOfPost(self, postid: int) -> list[int]:
+        cur = await self._conn.execute(
             "SELECT userid FROM likes WHERE postid = ? AND disliked = 1",
             (postid,)
         )
-        return [r[0] for r in cur.fetchall()]
+        return [r[0] for r in await cur.fetchall()]
 
     # ---------- Getters (Users) ----------
-    def getLikedPostsByUser(self, userid: int) -> list[str]:
-        cur = self.conn.execute(
+    async def getLikedPostsByUser(self, userid: int) -> list[str]:
+        cur = await self._conn.execute(
             "SELECT postid FROM likes WHERE userid = ? AND liked = 1",
             (userid,)
         )
-        return [r[0] for r in cur.fetchall()]
+        return [r[0] for r in await cur.fetchall()]
 
-    def getDislikedPostsByUser(self, userid: int) -> list[str]:
-        cur = self.conn.execute(
+    async def getDislikedPostsByUser(self, userid: int) -> list[str]:
+        cur = await self._conn.execute(
             "SELECT postid FROM likes WHERE userid = ? AND disliked = 1",
             (userid,)
         )
-        return [r[0] for r in cur.fetchall()]
+        return [r[0] for r in await cur.fetchall()]
 
     # ---------- Stats ----------
-    def getPostStats(self, postid: str) -> dict:
-        cur = self.conn.execute(
+    async def getPostStats(self, postid: int) -> dict:
+        cur = await self._conn.execute(
             "SELECT SUM(liked), SUM(disliked) FROM likes WHERE postid = ?",
             (postid,)
         )
-        res = cur.fetchone()
+        res = await cur.fetchone()
         return {
             "likes": res[0] or 0,
             "dislikes": res[1] or 0

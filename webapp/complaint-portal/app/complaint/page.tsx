@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {toast} from "react-toastify"
+import { useRouter } from "next/navigation";
 
 export default function ComplaintReportForm() {
 
@@ -105,7 +106,8 @@ export default function ComplaintReportForm() {
       if(result["post"] === "created"){
         toast.success("Complaint Received Successfully.")
       }else if(result["user"] === "not-found"){
-        toast.error("Wrong User ID. Please Login Again.")
+        toast.error("Invalid User ID. Please Login Again.")
+        useRouter().push("/login");
       }
 
       // Reset form data

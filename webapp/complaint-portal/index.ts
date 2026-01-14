@@ -3,8 +3,7 @@ import path, { parse } from 'path'
 import multer from 'multer'
 import cors from 'cors'
 import { randomBytes } from 'crypto'
-
-
+import { renameSync } from 'fs'
 
 const dbHost =  "http://localhost:9999"
 function parseCookie(req: any, res: any, next: (err?: any) => void){
@@ -98,7 +97,8 @@ app.post(
           res.contentType("application/json");
           res.status(200)
             .json({
-            authenticated : false
+            authenticated : false,
+            reason: data.reason
           });
         }
         else if(data["authenticated"] === true){
@@ -133,7 +133,7 @@ app.post(
       "title" : req.body.title,
       "text": req.body.description,
       "imageUrl" : "uploads/" + req.file?.filename,
-      "meta": { location:req.body.location,
+      "meta": { location: req.body.location,
                 category: req.body.category,
                 fileName: req.file?.originalname
               },
@@ -157,7 +157,14 @@ app.post(
     res.status(201).json({
       ...data,
       message: function(){
-        if(data["user"] == "not-found"){ return "Please Login First."}
+        if(data["user"] == "not-found"){
+          console.log({
+            user:"not-found",
+            postid:createPost.postid,
+            userid:createPost.userid}
+          );
+          return "User does not exist."
+        }
         else if(data["post"] == "created"){ return "Complaint Received."}
       }()
     })
@@ -180,7 +187,6 @@ app.post('/api/getPosts',
       if (!response.ok) { throw new Error("Failed to fetch reports."); }
 
       let data = await response.json();
-      console.log(data);
       res.contentType('application/json');
       res.status(200).json(data)
     }

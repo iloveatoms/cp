@@ -1,12 +1,31 @@
+import asyncio
 from aiohttp import web
 import json
 import database
+import os
 from pprint import pprint as pp
 
 
-userdb = database.Users('../databases/users.db')
-postsdb = database.Posts('../databases/users.db')
+# Database
+userdb = database.User('../databases/users.db')
+postsdb = database.Post('../databases/users.db')
 likesdb = database.Likes('../databases/users.db')
+
+async def initDatabase():
+    async with asyncio.TaskGroup() as tg:
+        t1 = tg.create_task(userdb.initConnection())
+        t2 = tg.create_task(postsdb.initConnection())
+        t3 = tg.create_task(likesdb.initConnection())
+
+    print("User Database: ", "Connected" if t1.result() == True else "Error")
+    print("Post Database: ", "Connected" if t2.result() == True else "Error")
+    print("Likes Database: ", "Connected" if t3.result() == True else "Error")
+
+async def closeDatabase():
+    async with asyncio.TaskGroup() as tg:
+        t1 = tg.create_task(userdb._close())
+        t2 = tg.create_task(postsdb._close())
+        t3 = tg.create_task(likesdb._close())
 
 
 
@@ -20,6 +39,13 @@ async def index(request):
         content_type='text/html'
         )
 
+async def uploads(request):
+    path = request.match_info.get("path","admin.jpg")
+
+    if not os.path.exists("../uploads/" + path):
+        path = "admin.jpg"
+    return web.FileResponse("../uploads/" + path)
+
 async def ooo(request):
     data = await request.json()
 
@@ -29,28 +55,32 @@ async def ooo(request):
     msg = {"status":"error"}
 
     if action == "SELECT":
-        ## QUERY COMMANDS ##
+        if table == "user":
+            columns = "aadhar, name, age, phone, bio, email, credits, dateOfCreation, followers, following"
 
-        # COLUMNS
-        columns = "*"
-        if data.get("columns"):
-            columns = ",".join(data["columns"]) #SQL Injection 🤩
+            if data.get("columns"):
+                columns = ",".join(data["columns"]) #SQL Injection 🤩
+        elif table == "post":
+            columns = "*"
 
-        limit = data["limit"] if data.get("limit") else 10
+        if data.get("limit"):
+            limit = data["limit"]
+            if isinstance(limit, int):
+                cmd += " LIMIT {limit}"
 
-        # SORT BY
-        # WHERE condition
+        cmd = f"SELECT {columns} FROM {table}"
 
+    cur = await userdb.cursor()
+    await cur.execute(cmd)
+    rows = await cur.fetchall()
 
-        result = userdb._execute(f"SELECT {columns} FROM {table} LIMIT {limit}")
+    if rows:
+        headers = [i[0] for i in cur.description]
+        msg["status"] = "success"
+        msg["headers"] = headers
+        msg["rows"] = rows
 
-        if result:
-            headers = list(map(lambda i : i[0], result.description))
-            rows = result.fetchall()
-
-            msg["status"] = "success"
-            msg["headers"] = headers
-            msg["rows"] = rows
+    await cur.close()
 
     msg = json.dumps(msg)
     return web.Response(text=msg, content_type="application/json")
@@ -61,19 +91,14 @@ async def ooo(request):
 async def register(request):
     data = dict(await request.json())
 
-    # required = ["userid", "name", "password", "aadhar"]
-
-    # if not all(k in data for k in required):
-    #     msg = {"error": "missing-fields"}
-    #     return web.Response(text=json.dumps(msg), content_type="application/json", status=400)
-
-    if userdb.getUser(data["userid"]) is not None:
+    if (await userdb.getUser(data["userid"])) is not None:
         msg = {"user": "exists"}
         return web.Response(text=json.dumps(msg), content_type="application/json", status=409)
 
     data["meta"]["password"] = database.hash_password(data["meta"]["password"])
 
-    userdb.createUser(**data)
+    # !!!
+    await userdb.createUser(**data)
 
     msg = {"user": "created"}
     return web.Response(text=json.dumps(msg), content_type="application/json", status=201)
@@ -87,13 +112,15 @@ async def login(request):
     msg = {"authenticated": False}
 
     if not userid or not password:
-        return web.Response(text=json.dumps(msg), content_type="application/json", status=400)
+        msg["reason"] = "Invalid Login Details"
 
-    if userdb.verifyPassword(userid, password):
+    elif (await userdb.verifyPassword(userid, password)):
         msg["authenticated"] = True
         return web.Response(text=json.dumps(msg), content_type="application/json")
+    else:
+        msg["reason"] = "Wrong UserID or Password"
 
-    return web.Response(text=json.dumps(msg), content_type="application/json", status=401)
+    return web.Response(text=json.dumps(msg), content_type="application/json")
 
 
 
@@ -109,7 +136,7 @@ async def updateUser(request):
         )
 
     for key, value in data.items():
-        userdb.setValue(userid, key, value)
+        await userdb.setValue(userid, key, value)
 
     return web.Response(
         text=json.dumps({"status": "updated"}),
@@ -121,13 +148,12 @@ async def createPost(request):
     data = await request.json()
     data = dict(data)
 
-    if userdb.getUser(data["userid"])==None:
+    if (await userdb.getUser(data["userid"]))==None:
         msg = {"user":"not-found"}
-    elif postsdb.getPost(data["postid"])==None:
-        postsdb.createPost(**data)
+
+    elif (await postsdb.getPost(data["postid"]))==None:
+        await postsdb.createPost(**data)
         msg = {"post":"created"}
-    else:
-        msg = {"post":"exists"}
 
     msg = json.dumps(msg)
 
@@ -141,7 +167,7 @@ async def updateLikes(request):
     action = data["action"]
 
 
-    liked, disliked = likesdb.setInteraction(accessUserId, postid, action)
+    liked, disliked = await likesdb.setInteraction(accessUserId, postid, action)
 
     msg = {}
     msg["currentUser"] = {
@@ -150,7 +176,7 @@ async def updateLikes(request):
         "disliked" : bool(disliked)
     }
 
-    post = postsdb.getPost(postid)
+    post = await postsdb.getPost(postid)
     msg["post"] = {
         "postid" : postid,
         "likes"  : post["likes"],
@@ -171,17 +197,16 @@ async def getUserProfile(request):
 
     # if (userid if private && cuserid follows userid) 😲
 
-    msg = userdb.getUser(userid)
+    msg = await userdb.getUser(userid)
 
     if not msg:
-        msg = userdb.getUser(-1)
+        msg = await userdb.getUser(-1)
 
     msg.pop("meta")
     msg.pop("sessionid")
 
     msg = json.dumps(msg)
     return web.Response(text=msg, content_type="application/json")
-
 
 async def getPosts(request):
     data = await request.json()
@@ -192,17 +217,18 @@ async def getPosts(request):
     postedBy = data["postUser"]
     postCount = data["count"]
 
+    pp(data)
     if postedBy == "*":
-        posts =  postsdb.getAllPosts()[:postCount]
+        posts =  (await postsdb.getAllPosts() )[:postCount]
     else:
-        posts = postsdb.getAllPosts(postedBy)[:postCount]
+        posts = (await postsdb.getAllPosts(postedBy) )[:postCount]
 
     for i in range(len(posts)):
-        postedUserProfile = userdb.getUser(posts[i]["userid"])
+        postedUserProfile = await userdb.getUser(posts[i]["userid"])
         if postedUserProfile:
             posts[i]["user"] = postedUserProfile
         else:
-            posts[i]["user"] = userdb.getUser(-1) # Deleted User = Admin 😂
+            posts[i]["user"] = await userdb.getUser(-1) # Deleted User = Admin 😂
             posts[i]["user"]["name"] += "<sub>Deleted By Admin</sub>"
             posts[i]["user"]["userid"] = posts[i]["userid"]
 
@@ -212,7 +238,7 @@ async def getPosts(request):
 
         accessUserProfile = {}
         accessUserProfile["userid"] = accessUserId
-        userPostInteraction = likesdb.getInteraction(accessUserId,posts[i]["postid"])
+        userPostInteraction = await likesdb.getInteraction(accessUserId,posts[i]["postid"])
 
         if accessUserId == -1 or not userPostInteraction:
             accessUserProfile["postLiked"] = False
@@ -229,13 +255,14 @@ async def getPosts(request):
 
 
 
+
+    # Server API
 app = web.Application()
 app.add_routes([
     # ADMIN
     web.get('/', index),
+    web.get('/uploads/{path}', uploads),
     web.post('/', ooo),
-
-
 
     # USER
     web.post('/getUserProfile', getUserProfile),
@@ -249,5 +276,6 @@ app.add_routes([
     web.post('/post', createPost)
 ])
 
-if __name__ == '__main__':
-    web.run_app(app,host="localhost", port=9999)
+asyncio.run(initDatabase())
+web.run_app(app,host="localhost", port=9999)
+asyncio.run(closeDatabase())

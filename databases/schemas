@@ -3,12 +3,12 @@ CREATE TABLE user (
     name TEXT NOT NULL,
     email TEXT,
     phone TEXT,
-    aadhar TEXT NOT NULL,
-    age INTEGER,
+    aadhar INTEGER NOT NULL,
+    age INTEGER DEFAULT 0,
     followers INTEGER DEFAULT 0,
     following INTEGER DEFAULT 0,
     credits INTEGER DEFAULT 0,
-    dateOfCreation TEXT,
+    dateOfCreation INTEGER,
     profileUrl text,
     bio text,
     meta TEXT,
@@ -16,9 +16,9 @@ CREATE TABLE user (
 );
 
 CREATE TABLE post (
-    postid TEXT PRIMARY KEY,
+    postid INTEGER PRIMARY KEY,
     userid INTEGER,
-    dateOfCreation TEXT,
+    dateOfCreation INTEGER,
     title TEXT,
     text TEXT,
     imageUrl TEXT,
@@ -34,7 +34,7 @@ CREATE TABLE post (
 CREATE TABLE likes (
     userid INTEGER NOT NULL REFERENCES user(userid)
         ON UPDATE CASCADE ON DELETE CASCADE,
-    postid TEXT NOT NULL REFERENCES post(postid)
+    postid INTEGER NOT NULL REFERENCES post(postid)
         ON UPDATE CASCADE ON DELETE CASCADE,
     liked BOOLEAN NOT NULL DEFAULT 0,
     disliked BOOLEAN NOT NULL DEFAULT 0,

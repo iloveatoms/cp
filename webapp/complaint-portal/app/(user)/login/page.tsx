@@ -38,7 +38,7 @@ export default function LoginPage() {
         toast.success("Login successful");
         setTimeout( ()=> {window.location.replace(redirect) }, 1000 )
       } else if (data.authenticated === false)
-        { toast.error("Wrong password. Try Again") }
+        { toast.error(data.reason ? data.reason : "Wrong password. Try Again") }
       }
       catch {
       toast.error("Network Error..")

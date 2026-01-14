@@ -9,6 +9,7 @@ export default function ReportsPage() {
   const [storedUserId, setUserId] = useState<number>(-1);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [pageTitle, setPageTitle] = useState<string>("All Reports");
 
 
   const renderReports = async () => {
@@ -18,6 +19,10 @@ export default function ReportsPage() {
       const data = await sys.fetchReports(storedUserId, null, 10);
       if (data.length > 0){
         setReports(data); //data is assumed type Report[]
+        setPageTitle("All Reports");
+      }
+      else{
+        setPageTitle("No Reports Available");
       }
     } catch (err) {
       toast.error(err instanceof Error ? "Network Error \n" + err.message : "Network Error");
@@ -98,7 +103,7 @@ export default function ReportsPage() {
     <div className="dark p-4 min-h-screen">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-green-800 mb-6 text-center">
-          All Reports
+          {pageTitle}
         </h1>
 
         <div className="dark grid gap-4 md:grid-cols-2 lg:grid-cols-3">
