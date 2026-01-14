@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Myna API</title>
-  <style>
+  <title>HELLo</title>
+<style>
  /* ===== RESET ===== */
 * {
   box-sizing: border-box;
@@ -21,11 +21,13 @@ body {
 
 /* ===== HEADERS ===== */
 h1 {
+  pointer-events: none;
   color: #ecfdf5;
   margin: 20px 0 5px;
 }
 
 h3 {
+  pointer-events: none;
   color: #34d399;
   letter-spacing: 2px;
 }
@@ -47,7 +49,11 @@ h3 {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
+.nav button.active {
+  background: #10b981;
+  color: #022c22;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+}
 .nav button:hover {
   background: #10b981;
   color: #022c22;
@@ -74,6 +80,7 @@ table {
 
 /* ===== TABLE HEADERS ===== */
 .field {
+  user-select: none;
   background: #022c22;
   color: #34d399;
   font-weight: bold;
@@ -82,7 +89,7 @@ table {
 
 .field:hover {
   background: #064e3b;
-  color: #ecfdf5;
+  color: #006eff;
 }
 
 /* ===== TABLE CELLS ===== */
@@ -91,8 +98,8 @@ table {
 }
 
 /* ===== ROW HOVER ===== */
-.row:hover .value {
-  background: #022c22;
+.row:hover {
+  background: #1c2c026c;
 }
 
 /* ===== BORDERS & PADDING ===== */
@@ -130,113 +137,337 @@ table {
   scrollbar-color: #10b981 #020617;
 }
 
+.gradient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--x, 50%) var(--y, 50%),
 
-  </style>
+    /* micro core */
+    rgba(0, 180, 255, 1) 0px,
+    rgba(0, 180, 255, 0.9) 1.5px,
+
+    /* tiny transition */
+    rgba(0, 255, 180, 0.6) 3px,
+    rgba(0, 255, 180, 0.35) 4.5px,
+
+    /* soft fade */
+    rgba(0, 255, 180, 0.15) 6px,
+    rgba(0, 255, 180, 0.05) 8px,
+
+    transparent 10px
+  );
+  transition: background 0.03s linear;
+  filter: blur(1.5px);
+}
+</style>
 </head>
 <body>
-  <h1 style='text-align:center;font-size:50px;font-family:sans-serif'>Myna API</h1>
-  <h3 style='text-align:center;font-size:15px;font-family:monospace;color:blue'>ADMIN DASHBOARD</h3>
+  <div class="gradient"></div>
+  <h1 style='text-align:center;font-size:50px;font-family:sans-serif'>Hello</h1>
+  <h3 style='text-align:center;font-size:15px;font-family:monospace;color:blue'>Hello</h3>
 
   <hr style="margin: 5px 10px 20px;border:2px solid rgb(70, 92, 161);">
 
   <div class="nav">
-    <button id="issues"> Issues </button>
-    <button id="users">  Users  </button>
+    <button id="user" onclick="updateTables(this)">  Users  </button>
+    <button id="post" onclick="updateTables(this)"> Issues </button>
   </div>
 
   <div id="container">
   </div>
 
-  <script>
-    const dbUrl = "/";
-    const container = document.getElementById("container");
-    let headers, rows;
-    let sortDirection = {};
+<script>
+  const dbUrl = "/";
+  const container = document.getElementById("container");
 
-    function sortField(e){
+  const tables = [];
+  const sortDirection = {};
 
-      field = e.target.id;
-      pos = headers.indexOf(field);
+  document.addEventListener("mousemove", (e) => {
+    const x = (e.clientX / window.innerWidth) * 100;
+    const y = (e.clientY / window.innerHeight) * 100;
+    document.documentElement.style.setProperty("--x", `${x}%`);
+    document.documentElement.style.setProperty("--y", `${y}%`);
+  });
 
-      const fact = sortDirection[field] ? -1*sortDirection[field] : 1;
+  function formatUnixHint(unix) {
+  if (!unix || isNaN(unix)) return unix;
 
-      sortDirection[field] = fact;
+  // If number > 10^12, assume milliseconds
+  const timestamp = unix > 1e12 ? unix : unix * 1000;
 
-      if (typeof rows[0][pos] === "string"){
-        rows.sort( (a,b) => { return fact*(a[pos].localeCompare(b[pos])); } );
-      }else if (typeof rows[0][pos] === "number"){
-        rows.sort( (a,b) => { return fact*(a[pos] - b[pos] )  } );
+  const d = new Date(timestamp);
+
+  // Break out each part
+  const year = `<span style="color:#34d399;font-weight:bold">${d.getFullYear()}</span>`;
+  const month = `<span style="color:#60a5fa;font-weight:bold">${d.getMonth() + 1}</span>`;
+  const day = `<span style="color:#facc15;font-weight:bold">${d.getDate()}</span>`;
+  const hours = `<span style="color:#f472b6;font-weight:bold">${d.getHours()}</span>`;
+  const minutes = `<span style="color:#fb923c;font-weight:bold">${d.getMinutes()}</span>`;
+  const seconds = `<span style="color:#a78bfa;font-weight:bold">${d.getSeconds()}</span>`;
+
+  // Combine parts
+  const formatted = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+  return `
+    <div>${unix}</div>
+    <div style="font-size:11px;opacity:0.8">${formatted}</div>
+  `;
+}
+
+function attachImagePopup(link) {
+  let popup;
+  let hideTimeout;
+
+  const showPopup = () => {
+    // Clear any pending hide
+    if (hideTimeout) clearTimeout(hideTimeout);
+
+    if (popup) return; // already visible
+
+    popup = document.createElement("div");
+    Object.assign(popup.style, {
+      position: "fixed",
+      top: link.getBoundingClientRect().bottom + "px",
+      left: link.getBoundingClientRect().left + "px",
+      background: "#020617",
+      padding: "5px",
+      border: "1px solid #064e3b",
+      borderRadius: "6px",
+      zIndex: 9999,
+      boxShadow: "0 0 10px rgba(0,0,0,0.5)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "flex-start",
+      maxWidth: "300px",
+    });
+
+    const img = document.createElement("img");
+    img.src = link.href;
+    Object.assign(img.style, {
+      maxWidth: "100%",
+      maxHeight: "200px",
+      borderRadius: "4px",
+      marginBottom: "4px",
+    });
+
+    const copyBtn = document.createElement("span");
+    copyBtn.textContent = "Copy Image";
+    Object.assign(copyBtn.style, {
+      cursor: "pointer",
+      fontSize: "12px",
+      color: "#34d399",
+      userSelect: "none",
+    });
+
+    copyBtn.onclick = async (e) => {
+      e.stopPropagation();
+      try {
+        const response = await fetch(link.href);
+        const blob = await response.blob();
+        const item = new ClipboardItem({ [blob.type]: blob });
+        await navigator.clipboard.write([item]);
+        copyBtn.textContent = "✅ Copied!";
+        setTimeout(() => (copyBtn.textContent = "Copy Image"), 1000);
+      } catch (err) {
+        console.error(err);
+        copyBtn.textContent = "❌ Failed";
+        setTimeout(() => (copyBtn.textContent = "Copy Image"), 1000);
       }
+    };
 
-      createTable(headers,rows);
+    popup.appendChild(img);
+    popup.appendChild(copyBtn);
+    document.body.appendChild(popup);
+
+    // Keep popup if mouse is over it
+    popup.onmouseenter = () => {
+      if (hideTimeout) clearTimeout(hideTimeout);
+    };
+    popup.onmouseleave = () => {
+      hidePopup();
+    };
+  };
+
+  const hidePopup = () => {
+    hideTimeout = setTimeout(() => {
+      if (popup) {
+        popup.remove();
+        popup = null;
+      }
+    }, 200); // small delay to allow moving mouse from link → popup
+  };
+
+  link.onmouseenter = showPopup;
+  link.onmouseleave = hidePopup;
+}
+
+
+
+
+function renderMeta(value) {
+  if (!value) return "";
+
+  try {
+    const obj = typeof value === "string" ? JSON.parse(value) : value;
+
+    return `<pre style="
+      margin:0;
+      text-align:left;
+      font-size:12px;
+      line-height:1.4;
+      color:#d1fae5;
+      white-space:pre-wrap;
+      max-width:420px;
+    ">${JSON.stringify(obj, null, 2)}</pre>`;
+  } catch {
+    return `<span style="color:#f87171">${value}</span>`;
+  }
+}
+
+function makeCellCopyable(td, raw) {
+  td.style.position = "relative";
+
+  const icon = document.createElement("span");
+  icon.innerHTML = "📋";
+  Object.assign(icon.style, {
+    position: "absolute",
+    top: "2px",
+    right: "4px",
+    fontSize: "12px",
+    color: "#34d399",
+    opacity: "0",
+    transition: "opacity 0.2s",
+    cursor: "pointer",
+    userSelect: "none",
+  });
+
+  icon.onclick = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(String(raw));
+    icon.innerHTML = "✅";
+    setTimeout(() => (icon.innerHTML = "📋"), 800);
+  };
+
+  td.onmouseenter = () => (icon.style.opacity = "1");
+  td.onmouseleave = () => (icon.style.opacity = "0");
+
+  td.appendChild(icon);
+}
+
+
+
+function sortField(e) {
+  const field = e.target.id;
+  const tableEl = e.target.closest("table");
+  const tableObj = tables.find(t => t.ele === tableEl);
+  if (!tableObj) return;
+
+  const pos = tableObj.fields.indexOf(field);
+  const dir = sortDirection[field] ? -sortDirection[field] : 1;
+  sortDirection[field] = dir;
+
+  tableObj.rows.sort((a, b) => {
+    if (typeof a[pos] === "number") {
+      return dir * (a[pos] - b[pos]);
     }
+    return dir * a[pos].toString().localeCompare(b[pos].toString());
+  });
 
-    async function getData(action, table, data){
-      const response = await fetch(dbUrl, {
-        method: "POST",
-        headers : {'Content-Type':'application/json'},
-        body : JSON.stringify(
-          {
-            action : action,
-            table : table,
-            ...data
+  renderTable(tableObj);
+}
+
+  async function getData(action, table, data = {}) {
+    const response = await fetch(dbUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, table, ...data })
+    });
+    return response.ok ? response.json() : null;
+  }
+
+  function renderTable(tableObj) {
+    tableObj.ele.innerHTML = "";
+
+    const headerRow = tableObj.ele.insertRow();
+    tableObj.fields.forEach(f => {
+      const cell = headerRow.insertCell();
+      cell.className = "field";
+      cell.id = f;
+      cell.textContent = f;
+      cell.onclick = sortField;
+    });
+
+    tableObj.rows.forEach((row, i) => {
+      const tr = tableObj.ele.insertRow();
+      tr.className = "row";
+      row.forEach((val, idx) => {
+          const td = tr.insertCell();
+          td.className = "value";
+          const fieldName = tableObj.fields[idx];
+
+          if (fieldName === "dateOfCreation") { td.innerHTML = formatUnixHint(val); }
+          else if (fieldName === "meta") { td.innerHTML = renderMeta(val); }
+          else if (fieldName === "imageUrl") {
+            const link = document.createElement("a");
+            link.href = val;               // raw image URL
+            link.textContent = val;
+            link.target = "_blank";        // can still open full image in new tab if needed
+            link.style.color = "#3b82f6";
+            link.style.textDecoration = "underline";
+            td.appendChild(link);
+            attachImagePopup(link);
           }
-        )
+          else { td.textContent = val; }
+          makeCellCopyable(td, val);
       });
+    });
+  }
 
-      if (response.ok){
-        const resp = await response.json();
-        return resp
-      }
-      else{
-        console.error(response.error);
-      }
-    }
+  function createTable(fields, rows, tabID) {
+    const table = document.createElement("table");
+    table.id = "table:" + tabID;
+    table.style.display = "none";
 
-    function createTable(fields, rows){
-      table = document.createElement('table');
-      table.id = "table";
+    const tableObj = { ele: table, fields, rows };
+    tables.push(tableObj);
 
-      fieldRow = table.insertRow();
-      fieldRow.className = "fields"
-      for(let i=0; i<fields.length;i++){
-        let ihead = fieldRow.insertCell();
-        ihead.id = fields[i];
-        ihead.className = "field";
-        ihead.innerHTML = fields[i];
+    renderTable(tableObj);
+    container.appendChild(table);
+  }
 
-        ihead.onclick = sortField;
-      }
+  function fillTables() {
+    ["user", "post"].forEach(v => {
+      getData("SELECT", v).then(res => {
+        if (res && res.status === "success") {
+          createTable(res.headers, res.rows, v);
 
-      for(let i=0; i<rows.length; i++){
-        let irow = table.insertRow();
-        irow.id = "row" + i;
-        irow.className = "row";
-
-        for(let j=0; j<fields.length; j++){
-          let icell = irow.insertCell();
-          icell.id = irow.id + ':' + j;
-          icell.className = "value";
-          icell.innerHTML = rows[i][j];
+          // show Users tab by default
+          if (v === "user") {
+            requestAnimationFrame(() => {
+              updateTables(document.getElementById("user"));
+            });
+          }
         }
-      }
-
-     container.innerHTML = "";
-     container.appendChild(table);
-    }
+      });
+    });
+  }
 
 
-    getData("SELECT","user",{}).then(
-      (res)=>{
-        if (res.status === "success")
-        {
-          headers = res.headers;
-          rows = res.rows;
-          createTable(res.headers, res.rows);
-        }
-        else{ document.body.innerHTML += "status : " + res.status; }
-      }
-    )
-  </script>
+  function updateTables(btn) {
+    tables.forEach(t => {
+      t.ele.style.display =
+        t.ele.id === "table:" + btn.id ? "table" : "none";
+    });
+
+    document.querySelectorAll(".nav button").forEach(b =>
+      b.classList.toggle("active", b === btn)
+    );
+  }
+
+  fillTables();
+</script>
 </body>
 </html>
