@@ -25,7 +25,14 @@ export type Report = {
     category: string,
     fileName: string,
     status: string,
-    statusDate : number
+    statusDate : number,
+    gps : {
+      longitude : number,
+      latitude : number,
+      altitude : number,
+      date : string,
+      time : string
+    }
   },
   likes: number,
   dislikes: number,

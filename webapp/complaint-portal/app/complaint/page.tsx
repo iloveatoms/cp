@@ -9,19 +9,19 @@ import {toast} from "react-toastify"
 import { useRouter } from "next/navigation";
 
 export default function ComplaintReportForm() {
-
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState<{
     aadhaar: string;
-    image: File | null;
+    image: File | undefined;
     title: string;
     description: string;
     location: string;
     category: string;
   }>({
     aadhaar: "-1",
-    image: null,
+    image: undefined,
     title: "",
     description: "",
     location: "",
@@ -41,14 +41,18 @@ export default function ComplaintReportForm() {
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
+
     const target = e.target;
     const { name, value } = target;
 
     if (target instanceof HTMLInputElement && target.type === 'file') {
+      const file = target.files?.[0];
       setFormData((prev) => ({
         ...prev,
-        [name]: target.files?.[0] ?? null,
+        [name]:  file
       }));
+
+      setImagePreview( file ? URL.createObjectURL(file) : null  );
       return;
     }
 
@@ -75,9 +79,13 @@ export default function ComplaintReportForm() {
       toast.error("Please fill all required fields.\n");
       return;
     }
+    if(!formData.image){
+      toast.error("Please Select an image")
+    }
 
     if (formData.aadhaar == "-1") {
       toast.error("User not logged in. Please log in first.");
+      useRouter().push("/login");
       return;
     }
 
@@ -105,15 +113,22 @@ export default function ComplaintReportForm() {
 
       if(result["post"] === "created"){
         toast.success("Complaint Received Successfully.")
+        setTimeout( ()=>(useRouter().push("/complaint")), 500)
       }else if(result["user"] === "not-found"){
         toast.error("Invalid User ID. Please Login Again.")
         useRouter().push("/login");
+        return;
+      }
+      else if(result["message"] === "no-image"){
+        toast.info("Please Try Again.")
+        setTimeout( ()=>(useRouter().push("/complaint")), 500)
+        return
       }
 
       // Reset form data
       setFormData({
         aadhaar: formData.aadhaar,
-        image: null,
+        image: undefined,
         title: "",
         description: "",
         location: "",
@@ -160,6 +175,16 @@ export default function ComplaintReportForm() {
                 onChange={handleChange}
                 className="rounded-2xl border border-[#E1F1E4] bg-dark text-sm focus-visible:ring-2 focus-visible:ring-[#A1D99B]"
               />
+              {imagePreview && (
+                <div className="mt-4 flex justify-center">
+                  <img
+                    src={imagePreview}
+                    onClick={()=>(window.open(imagePreview, "_blank"))}
+                    alt="Selected preview"
+                    className="max-h-60 rounded-2xl cursor-pointer hover:brightness-75 border border-[#E1F1E4] object-contain shadow"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -217,6 +242,15 @@ export default function ComplaintReportForm() {
                 <option value="Garbage">Garbage</option>
                 <option value="Other">Other</option>
               </select>
+              {formData.category === "Other" && (
+                <input
+                  type="text"
+                  name="category"
+                  placeholder="Enter category"
+                  className="mt-2 w-full rounded-2xl border border-[#E1F1E4] bg-dark px-4 py-2 text-sm text-[#333333]"
+                  required
+                />
+              )}
             </div>
 
             <Button

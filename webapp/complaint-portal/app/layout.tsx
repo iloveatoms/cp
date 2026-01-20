@@ -25,6 +25,9 @@ export default function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        <title>Complaint Portal</title>
+      </head>
       <body
         className={`${poppins.className} min-h-screen dark flex flex-col antialiased`}
       >

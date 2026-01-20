@@ -1,33 +1,35 @@
 "use client";
 
 import React from "react";
+import { Report} from "@/lib/types"
 
 import ReviewedIcon from "@/components/svg/reviewed";
 import UnderReviewIcon from "@/components/svg/underReview";
 import RejectedIcon from "@/components/svg/rejected";
 
-
-import { Report} from "@/lib/types"
-
 const statusConfig : any = {
   reviewed: {
     title : "Reviewed",
     Icon: ReviewedIcon,
-    color: "text-green-600",
+    style: "text-green-600",
   },
   underReview: {
     title : "Under Review",
     Icon: UnderReviewIcon,
-    color: "text-yellow-500 animate-pulse",
+    style: "text-yellow-500 hover:animate-spin",
   },
   rejected: {
     title: "Rejected",
     Icon: RejectedIcon,
-    color: "text-red-600",
+    style: "text-red-600",
   },
 };
 
 
+
+function linkLocation(gps : Report["meta"]["gps"]) : React.MouseEventHandler<HTMLSpanElement>{
+  return (e: React.MouseEvent<HTMLButtonElement>)=>{ window.open(`https://www.openstreetmap.org/?mlat=${gps.latitude}&mlon=${gps.longitude}`,"_blank") }
+}
 
 function formatRelativeDate(dateString: number) {
   const date = new Date(Number(dateString));
@@ -106,14 +108,22 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
         </h3>
 
         {/* Description */}
-        <p className="text-sm text-gray-600 mb-2 line-clamp-3 overflow-hidden">
+        <p className="text-sm text-gray-600 mb-2 line-clamp-3 overflow-hidden border-green-900">
           {report.text}
         </p>
 
         {/* Meta info */}
-        <p className="text-xs text-gray-500 mb-3">
-          <strong>Location:</strong> {report.meta.location}
-          <strong>Category:</strong> {report.meta.category}
+        <p className="flex flex-col text-xs text-gray-500 mb-3">
+          <span
+            title={`Latitude : ${report.meta.gps.latitude} \n Longitude : ${report.meta.gps.longitude}`}
+            onClick={linkLocation(report.meta.gps)}
+            className="hover:cursor-pointer hover:underline hover:decoration-green-500">
+              <strong>Location:</strong> {report.meta.location}
+          </span>
+          <span
+            className="hover:cursor-pointer hover:underline hover:decoration-green-500">
+              <strong>Category:</strong> {report.meta.category}
+          </span>
         </p>
 
         {/* Likes / Dislikes */}
@@ -174,9 +184,9 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
               const status = statusConfig[report.meta.status];
               if (!status) return null;
 
-              const { Icon, color, title } = status;
+              const { Icon, style } = status;
 
-              return <Icon className={`w-6 h-6 ${color}`} />;
+              return <Icon className={`w-6 h-6 ${style}`} />;
             })()}
           </div>
         </div>

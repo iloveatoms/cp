@@ -1,11 +1,18 @@
 import express, { Request, Response } from 'express'
-import path, { parse } from 'path'
+import path from 'path'
 import multer from 'multer'
 import cors from 'cors'
+import sharp from 'sharp'
+import exifReader from "exif-reader";
 import { randomBytes } from 'crypto'
-import { renameSync } from 'fs'
 
 const dbHost =  "http://localhost:9999"
+const SERVE_DIR = path.join(__dirname, 'build')
+const UPLOAD_DIR = path.join(__dirname, '..', '..',"uploads"); //Root resource
+
+
+
+
 function parseCookie(req: any, res: any, next: (err?: any) => void){
   let d: any = new Object()
   if (req.headers.cookie === undefined){
@@ -23,16 +30,59 @@ function parseCookie(req: any, res: any, next: (err?: any) => void){
   next()
 }
 
+function convertDMSToDD(dms : any, ref : any) {
+  const [degrees, minutes, seconds] = dms;
+  let dd = degrees + minutes / 60 + seconds / 3600;
+
+  if (ref === "S" || ref === "W") {
+    dd = -dd;
+  }
+  return dd;
+}
+
+async function getGeo(filePath : string) : Promise<Object | undefined>{
+  try {
+
+    const metadata = await sharp( path.join(UPLOAD_DIR , filePath) ).metadata();
+    let gps = undefined;
+
+    if(metadata.exif){
+      const geo = exifReader(metadata.exif);
+      if(geo && geo.GPSInfo){
+            gps = {
+              latitude: convertDMSToDD(
+                geo.GPSInfo.GPSLatitude,
+                geo.GPSInfo.GPSLatitudeRef
+              ),
+              longitude: convertDMSToDD(
+                geo.GPSInfo.GPSLongitude,
+                geo.GPSInfo.GPSLongitudeRef
+              ),
+              altitude: geo.GPSInfo.GPSAltitude ?? null,
+              date : geo.GPSInfo.GPSDateStamp ?? "0:0:0",
+              time : (geo.GPSInfo.GPSTimeStamp ?? [0,0,0]).join(":")
+            };
+      }
+    }
+    return gps;
+
+  } catch (error) {
+    console.error(`Metadata Processing Error: ${error}`);
+    return undefined;
+  }
+}
+
+
 type ComplaintRequest = Request & { file?: Express.Multer.File }
-const upload = multer({ dest: path.join(__dirname, '..', '..','uploads') })
+const upload = multer({ dest: UPLOAD_DIR })
 
 const app = express()
 app.use(cors())
 app.use(express.json())
 app.use(parseCookie)
 app.use(express.urlencoded({extended: true}))
-app.use(express.static(path.join(__dirname, 'build')))
-app.use("/uploads",express.static(path.join(__dirname, '..', '..',"uploads"))) //Root Dir
+app.use(express.static(SERVE_DIR))
+app.use("/uploads",express.static(UPLOAD_DIR))
 
 app.post('/api/register',async(req,res)=>{
 
@@ -124,6 +174,15 @@ app.post(
    upload.single('image'),
    async (req: ComplaintRequest, res: Response) => {
 
+   let geoMeta = null;
+   if(req.file){
+     geoMeta = await getGeo(req.file.filename);
+   }
+   else{
+    res.status(201).json({message: "no-image" })
+    return
+   }
+
     let createPost = {
       "postid": Date.now().toString(),
       "userid": Number(req.body.aadhaar),
@@ -135,12 +194,17 @@ app.post(
                 category: req.body.category,
                 fileName: req.file?.originalname,
                 status: "underReview",
-                statusDate: 0
+                statusDate: 0,
+                gps: geoMeta
               },
       "likes": 0,
       "dislikes":0,
       "credits":0
     }
+
+
+    //Get geo-location
+    console.log(geoMeta);
 
     //POST to users.db
     const resp = await fetch(dbHost + "/post", {

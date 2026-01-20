@@ -1,7 +1,7 @@
 import React from "react";
 
 const ReviewedIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-	<svg height="800px" width="800px" version="1.1" id="Capa_1"
+	<svg version="1.1" id="Capa_1"
 	  xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
 		viewBox="0 0 344.963 344.963"
 		xmlSpace="preserve"

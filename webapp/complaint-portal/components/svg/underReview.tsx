@@ -2,7 +2,7 @@ import React from "react";
 
 const UnderReviewIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 		<svg
-		 fill="currentColor" height="800px" width="800px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg"
+		 fill="currentColor" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg"
 			xmlnsXlink="http://www.w3.org/1999/xlink"
 			viewBox="0 0 30.393 30.393"
 			xmlSpace="preserve"
