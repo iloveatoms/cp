@@ -46,7 +46,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F7F9FA]">
+    <div className="min-h-screen flex items-center justify-center dark">
       <Card className="w-full max-w-md bg-dark shadow-xl rounded-2xl">
         <CardContent className="p-8 space-y-6">
           <h2 className="text-3xl font-semibold text-center text-[#2C6E49]">
@@ -58,6 +58,8 @@ export default function LoginPage() {
               <Label>Aadhaar</Label>
               <Input
                 value={aadhaar}
+                pattern="\d{1,}"
+                title="Enter Aadhar Number only "
                 onChange={(e) => setAadhaar(e.target.value)}
                 required
               />

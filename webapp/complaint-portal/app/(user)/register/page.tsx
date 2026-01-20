@@ -4,7 +4,6 @@ import { useEffect, useState, FormEvent } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { toast } from "react-toastify"
 
 export default function RegisterPage() {
@@ -56,7 +55,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F7F9FA]">
+    <div className="dark min-h-screen flex items-center justify-center bg-[#F7F9FA]">
       <Card className="w-full max-w-md">
         <CardContent className="p-8 space-y-4">
           <h2 className="text-3xl font-semibold text-center">Register</h2>

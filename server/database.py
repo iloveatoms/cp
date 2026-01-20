@@ -32,7 +32,6 @@ class Connection:
 
 
 
-
 class User(Connection):
     def __init__(self, dbPath):
         super().__init__(dbPath)
@@ -382,7 +381,6 @@ class Post(Connection):
             query += " WHERE userid = ?"
             params = (userid,)
 
-            print(query, params)
 
         await cur.execute(query, params)
         rows = await cur.fetchall()

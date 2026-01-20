@@ -123,8 +123,6 @@ app.post(
   '/api/complaints',
    upload.single('image'),
    async (req: ComplaintRequest, res: Response) => {
-    console.log('BODY:', req.body )
-    console.log('FILE:', req.file)
 
     let createPost = {
       "postid": Date.now().toString(),
@@ -135,14 +133,14 @@ app.post(
       "imageUrl" : "uploads/" + req.file?.filename,
       "meta": { location: req.body.location,
                 category: req.body.category,
-                fileName: req.file?.originalname
+                fileName: req.file?.originalname,
+                status: "underReview",
+                statusDate: 0
               },
       "likes": 0,
       "dislikes":0,
       "credits":0
     }
-
-    console.log(createPost)
 
     //POST to users.db
     const resp = await fetch(dbHost + "/post", {
@@ -165,7 +163,10 @@ app.post(
           );
           return "User does not exist."
         }
-        else if(data["post"] == "created"){ return "Complaint Received."}
+        else if(data["post"] == "created"){
+          console.log(createPost)
+          return "Complaint Received."
+          }
       }()
     })
 
@@ -205,7 +206,7 @@ app.post('/api/getUserProfile',
       if (!response.ok) { throw new Error("Failed to fetch reports."); }
 
       let data = await response.json();
-      console.log(data);
+
       res.contentType('application/json');
       res.status(200).json(data)
     }

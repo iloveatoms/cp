@@ -2,10 +2,34 @@
 
 import React from "react";
 
+import ReviewedIcon from "@/components/svg/reviewed";
+import UnderReviewIcon from "@/components/svg/underReview";
+import RejectedIcon from "@/components/svg/rejected";
+
+
 import { Report} from "@/lib/types"
 
+const statusConfig : any = {
+  reviewed: {
+    title : "Reviewed",
+    Icon: ReviewedIcon,
+    color: "text-green-600",
+  },
+  underReview: {
+    title : "Under Review",
+    Icon: UnderReviewIcon,
+    color: "text-yellow-500 animate-pulse",
+  },
+  rejected: {
+    title: "Rejected",
+    Icon: RejectedIcon,
+    color: "text-red-600",
+  },
+};
 
-function formatRelativeDate(dateString: string) {
+
+
+function formatRelativeDate(dateString: number) {
   const date = new Date(Number(dateString));
   const now = new Date();
   const differenceInMilliseconds = now.getTime() - date.getTime();
@@ -127,20 +151,36 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
           </div>
         </div>
 
-        {/* User Profile (sticks to bottom) */}
-        <div className="flex items-center mt-auto pt-3 border-t">
-          <img
-            src={report.user.profileUrl}
-            alt={report.user.name}
-            className="w-10 h-10 rounded-full mr-3 object-cover"
-          />
-          <div>
-            <p className="font-medium text-gray-800" dangerouslySetInnerHTML={{ __html : report.user.name }}></p>
-            <p className="text-xs text-gray-500">
-              {formatRelativeDate(report.dateOfCreation)}
-            </p>
+        <div className="flex items-center justify-between mt-auto pt-3 gap-4">
+          {/* User Profile (sticks to bottom) */}
+          <div className="flex items-center mt-auto pt-3 border-t">
+            <img
+              src={report.user.profileUrl}
+              alt={report.user.name}
+              className="w-10 h-10 rounded-full mr-3 object-cover"
+            />
+            <div>
+              <p className="font-medium text-gray-800" dangerouslySetInnerHTML={{ __html : report.user.name }}></p>
+              <p className="text-xs text-gray-500">
+                {formatRelativeDate(report.dateOfCreation)}
+              </p>
+            </div>
+
+          </div>
+
+          {/* Post Status (sticks to bottom) */}
+          <div title={statusConfig[report.meta.status].title + "\nMarked at:" + formatRelativeDate(report.meta.statusDate)}  className="flex items-center mt-auto pt-3">
+          {(() => {
+              const status = statusConfig[report.meta.status];
+              if (!status) return null;
+
+              const { Icon, color, title } = status;
+
+              return <Icon className={`w-6 h-6 ${color}`} />;
+            })()}
           </div>
         </div>
+
       </div>
   );
 };

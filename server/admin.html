@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HELLo</title>
+  <title>Myna - Admin Dashboard</title>
 <style>
  /* ===== RESET ===== */
 * {
@@ -165,8 +165,8 @@ table {
 </head>
 <body>
   <div class="gradient"></div>
-  <h1 style='text-align:center;font-size:50px;font-family:sans-serif'>Hello</h1>
-  <h3 style='text-align:center;font-size:15px;font-family:monospace;color:blue'>Hello</h3>
+  <h1 style='text-align:center;font-size:50px;font-family:sans-serif'>Myna</h1>
+  <h3 style='text-align:center;font-size:15px;font-family:monospace;color:blue'>ADMIN DASHBOARD</h3>
 
   <hr style="margin: 5px 10px 20px;border:2px solid rgb(70, 92, 161);">
 
@@ -184,6 +184,13 @@ table {
 
   const tables = [];
   const sortDirection = {};
+  const statusRank = {
+    "": 0,
+    "underReview": 1,
+    "reviewed": 2,
+    "rejected": 3
+  };
+
 
   document.addEventListener("mousemove", (e) => {
     const x = (e.clientX / window.innerWidth) * 100;
@@ -193,45 +200,41 @@ table {
   });
 
   function formatUnixHint(unix) {
-  if (!unix || isNaN(unix)) return unix;
+    if (!unix || isNaN(unix)) return unix;
 
-  // If number > 10^12, assume milliseconds
-  const timestamp = unix > 1e12 ? unix : unix * 1000;
+    // If number > 10^12, assume milliseconds
+    const timestamp = unix > 1e12 ? unix : unix * 1000;
 
-  const d = new Date(timestamp);
+    const d = new Date(timestamp);
 
-  // Break out each part
-  const year = `<span style="color:#34d399;font-weight:bold">${d.getFullYear()}</span>`;
-  const month = `<span style="color:#60a5fa;font-weight:bold">${d.getMonth() + 1}</span>`;
-  const day = `<span style="color:#facc15;font-weight:bold">${d.getDate()}</span>`;
-  const hours = `<span style="color:#f472b6;font-weight:bold">${d.getHours()}</span>`;
-  const minutes = `<span style="color:#fb923c;font-weight:bold">${d.getMinutes()}</span>`;
-  const seconds = `<span style="color:#a78bfa;font-weight:bold">${d.getSeconds()}</span>`;
+    // Break out each part
+    const year = `<span style="color:#34d399;font-weight:bold">${d.getFullYear()}</span>`;
+    const month = `<span style="color:#60a5fa;font-weight:bold">${d.getMonth() + 1}</span>`;
+    const day = `<span style="color:#facc15;font-weight:bold">${d.getDate()}</span>`;
+    const hours = `<span style="color:#f472b6;font-weight:bold">${d.getHours()}</span>`;
+    const minutes = `<span style="color:#fb923c;font-weight:bold">${d.getMinutes()}</span>`;
+    const seconds = `<span style="color:#a78bfa;font-weight:bold">${d.getSeconds()}</span>`;
 
-  // Combine parts
-  const formatted = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    // Combine parts
+    const formatted = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 
-  return `
-    <div>${unix}</div>
-    <div style="font-size:11px;opacity:0.8">${formatted}</div>
-  `;
-}
+    return `
+      <div>${unix}</div>
+      <div style="font-size:11px;opacity:0.8">${formatted}</div>
+    `;
+  }
 
 function attachImagePopup(link) {
   let popup;
   let hideTimeout;
 
   const showPopup = () => {
-    // Clear any pending hide
     if (hideTimeout) clearTimeout(hideTimeout);
-
     if (popup) return; // already visible
 
     popup = document.createElement("div");
     Object.assign(popup.style, {
       position: "fixed",
-      top: link.getBoundingClientRect().bottom + "px",
-      left: link.getBoundingClientRect().left + "px",
       background: "#020617",
       padding: "5px",
       border: "1px solid #064e3b",
@@ -242,6 +245,21 @@ function attachImagePopup(link) {
       flexDirection: "column",
       alignItems: "flex-start",
       maxWidth: "300px",
+    });
+
+    const rect = link.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const popupHeight = 220; // img max-height 200 + padding + copy button
+    let top = rect.bottom;
+    if (rect.bottom + popupHeight > viewportHeight) {
+      // flip above link if not enough space
+      top = rect.top - popupHeight;
+      if (top < 0) top = 5; // clamp to top
+    }
+
+    Object.assign(popup.style, {
+      top: top + "px",
+      left: rect.left + "px",
     });
 
     const img = document.createElement("img");
@@ -263,32 +281,45 @@ function attachImagePopup(link) {
     });
 
     copyBtn.onclick = async (e) => {
-      e.stopPropagation();
-      try {
-        const response = await fetch(link.href);
-        const blob = await response.blob();
-        const item = new ClipboardItem({ [blob.type]: blob });
-        await navigator.clipboard.write([item]);
-        copyBtn.textContent = "✅ Copied!";
-        setTimeout(() => (copyBtn.textContent = "Copy Image"), 1000);
-      } catch (err) {
-        console.error(err);
-        copyBtn.textContent = "❌ Failed";
-        setTimeout(() => (copyBtn.textContent = "Copy Image"), 1000);
+    e.stopPropagation();
+
+    try {
+      const response = await fetch(link.href);
+      let blob = await response.blob();
+
+      // 🔥 FIX: normalize MIME type
+      if (blob.type === "application/octet-stream") {
+        const ext = link.href.split(".").pop().toLowerCase();
+
+        let mime = "image/png"; // safe default
+        if (ext === "jpg" || ext === "jpeg") mime = "image/jpeg";
+        else if (ext === "webp") mime = "image/webp";
+        else if (ext === "gif") mime = "image/gif";
+
+        blob = blob.slice(0, blob.size, mime);
       }
-    };
+
+      await navigator.clipboard.write([
+        new ClipboardItem({ [blob.type]: blob })
+      ]);
+
+      copyBtn.textContent = "✅ Copied!";
+      setTimeout(() => (copyBtn.textContent = "Copy Image"), 1000);
+
+    } catch (err) {
+      console.error(err);
+      copyBtn.textContent = "❌ Failed";
+      setTimeout(() => (copyBtn.textContent = "Copy Image"), 1000);
+    }
+  };
+
 
     popup.appendChild(img);
     popup.appendChild(copyBtn);
     document.body.appendChild(popup);
 
-    // Keep popup if mouse is over it
-    popup.onmouseenter = () => {
-      if (hideTimeout) clearTimeout(hideTimeout);
-    };
-    popup.onmouseleave = () => {
-      hidePopup();
-    };
+    popup.onmouseenter = () => { if (hideTimeout) clearTimeout(hideTimeout); };
+    popup.onmouseleave = () => { hidePopup(); };
   };
 
   const hidePopup = () => {
@@ -297,13 +328,68 @@ function attachImagePopup(link) {
         popup.remove();
         popup = null;
       }
-    }, 200); // small delay to allow moving mouse from link → popup
+    }, 200);
   };
 
   link.onmouseenter = showPopup;
   link.onmouseleave = hidePopup;
 }
 
+
+
+
+function renderStatusSelector(td, currentStatus, row, tableObj) {
+  const postIdIndex = tableObj.fields.indexOf("postid");
+  const statusDateIndex = tableObj.fields.indexOf("statusDate");
+
+  const postid = row[postIdIndex];
+  const oldStatus = currentStatus;
+
+  const select = document.createElement("select");
+  select.style.background = "#020617";
+  select.style.color = "#d1fae5";
+  select.style.border = "1px solid #064e3b";
+  select.style.borderRadius = "4px";
+  select.style.padding = "2px 4px";
+
+  ["", "reviewed", "rejected", "underReview"].forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v || "—";
+    if (v === currentStatus) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  select.onchange = async () => {
+    const newStatus = select.value;
+
+    // optimistic disable
+    select.disabled = true;
+
+    const res = await getData("UPDATE", "post", {
+      postid,
+      status: newStatus,
+      statusDate: Date.now()
+    });
+
+    if (res && res.status === "success") {
+      // update row data
+      row[tableObj.fields.indexOf("status")] = newStatus;
+      row[statusDateIndex] = Date.now();
+
+      // update statusDate cell visually
+      const statusDateCell = td.parentElement.cells[statusDateIndex];
+      statusDateCell.innerHTML = formatUnixHint(row[statusDateIndex]);
+    } else {
+      // rollback
+      select.value = oldStatus;
+    }
+
+    select.disabled = false;
+  };
+
+  td.appendChild(select);
+}
 
 
 
@@ -383,9 +469,17 @@ function sortField(e) {
     const response = await fetch(dbUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, table, ...data })
+      body: JSON.stringify({ action : action, table : table, ...data })
     });
     return response.ok ? response.json() : null;
+  }
+
+  async function updatePost(postid, status){
+    await getData("UPDATE", "post", {
+      postid : postid,
+      status : status,
+      statusDate : Date.now()
+    });
   }
 
   function renderTable(tableObj) {
@@ -408,7 +502,7 @@ function sortField(e) {
           td.className = "value";
           const fieldName = tableObj.fields[idx];
 
-          if (fieldName === "dateOfCreation") { td.innerHTML = formatUnixHint(val); }
+          if (fieldName === "dateOfCreation" || fieldName === "statusDate") { td.innerHTML = formatUnixHint(val); }
           else if (fieldName === "meta") { td.innerHTML = renderMeta(val); }
           else if (fieldName === "imageUrl") {
             const link = document.createElement("a");
@@ -420,7 +514,14 @@ function sortField(e) {
             td.appendChild(link);
             attachImagePopup(link);
           }
-          else { td.textContent = val; }
+          else if (fieldName === "status" && tableObj.ele.id === "table:post") {
+            renderStatusSelector(td, val, row, tableObj);
+            }
+          else {
+            td.textContent = val;
+          }
+
+          if (td.querySelector("select")) return;
           makeCellCopyable(td, val);
       });
     });
@@ -438,16 +539,59 @@ function sortField(e) {
     container.appendChild(table);
   }
 
+
+
+function normalizePostTable(headers, rows) {
+  const metaIndex = headers.indexOf("meta");
+  if (metaIndex === -1) return;
+
+  // Inject columns AFTER meta
+  headers.splice(metaIndex + 1, 0, "status", "statusDate");
+
+  rows.forEach(row => {
+    let status = "";
+    let statusDate = "";
+
+    try {
+      const meta = typeof row[metaIndex] === "string"
+        ? JSON.parse(row[metaIndex])
+        : row[metaIndex];
+
+      if (meta && typeof meta === "object") {
+        status = meta.status ?? "";
+        statusDate = meta.statusDate ?? "";
+
+        // remove ONLY these keys
+        delete meta.status;
+        delete meta.statusDate;
+
+        row[metaIndex] = JSON.stringify(meta);
+      }
+    } catch {
+      // leave meta untouched on error
+    }
+
+    // Inject values to match headers
+    row.splice(metaIndex + 1, 0, status, statusDate);
+  });
+}
+
+
+
+
+
   function fillTables() {
     ["user", "post"].forEach(v => {
       getData("SELECT", v).then(res => {
         if (res && res.status === "success") {
+          if (v === "post") { normalizePostTable(res.headers, res.rows); }
+
           createTable(res.headers, res.rows, v);
 
-          // show Users tab by default
-          if (v === "user") {
+          // show Post tab by default
+          if (v === "post") {
             requestAnimationFrame(() => {
-              updateTables(document.getElementById("user"));
+              updateTables(document.getElementById("post"));
             });
           }
         }

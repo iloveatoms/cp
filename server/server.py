@@ -1,6 +1,7 @@
 import asyncio
 from aiohttp import web
 import json
+import time
 import database
 import os
 from pprint import pprint as pp
@@ -26,7 +27,6 @@ async def closeDatabase():
         t1 = tg.create_task(userdb._close())
         t2 = tg.create_task(postsdb._close())
         t3 = tg.create_task(likesdb._close())
-
 
 
 ## Admin API
@@ -60,6 +60,7 @@ async def ooo(request):
 
             if data.get("columns"):
                 columns = ",".join(data["columns"]) #SQL Injection 🤩
+
         elif table == "post":
             columns = "*"
 
@@ -70,20 +71,46 @@ async def ooo(request):
 
         cmd = f"SELECT {columns} FROM {table}"
 
-    cur = await userdb.cursor()
-    await cur.execute(cmd)
-    rows = await cur.fetchall()
 
-    if rows:
-        headers = [i[0] for i in cur.description]
-        msg["status"] = "success"
-        msg["headers"] = headers
-        msg["rows"] = rows
+        ### --------- SELECT --------- ###
+        cur = await userdb.cursor()
+        await cur.execute(cmd)
+        rows = await cur.fetchall()
 
-    await cur.close()
+        if rows:
+            headers = [i[0] for i in cur.description]
+            msg["status"] = "success"
+            msg["headers"] = headers
+            msg["rows"] = rows
+
+        await cur.close()
+        ### --------- SELECT --------- ###
+
+    elif action == "UPDATE":
+        if table == "post":
+
+            postid = data.get("postid")
+            status = data.get("status")
+            dateOfUpdate = data.get("statusDate")
+
+            meta = json.loads(await postsdb.getValue(postid, "meta"))
+
+            if postid and status:
+                meta["status"] = status
+                meta["statusDate"] = dateOfUpdate
+
+                print("UPDATE post",postid,status)
+                pp(meta)
+
+                await postsdb.setValue(postid, "meta", meta)
+
+                msg["status"] = "success"
 
     msg = json.dumps(msg)
     return web.Response(text=msg, content_type="application/json")
+
+
+
 
 
 
@@ -229,7 +256,7 @@ async def getPosts(request):
             posts[i]["user"] = postedUserProfile
         else:
             posts[i]["user"] = await userdb.getUser(-1) # Deleted User = Admin 😂
-            posts[i]["user"]["name"] += "<sub>Deleted By Admin</sub>"
+            posts[i]["user"]["name"] = f'<sub>Deleted By Admin</sub> uid: {posts[i]["userid"]}'
             posts[i]["user"]["userid"] = posts[i]["userid"]
 
         posts[i]["user"].pop("meta")

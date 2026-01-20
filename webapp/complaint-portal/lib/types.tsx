@@ -14,21 +14,23 @@ export type UserProfile = {
 };
 
 export type Report = {
-  postid: string;
-  userid: number;
-  dateOfCreation: string;
-  title: string;
-  text: string;
-  imageUrl: string;
+  postid: string,
+  userid: number,
+  dateOfCreation: number,
+  title: string,
+  text: string,
+  imageUrl: string,
   meta: {
-    location: string;
-    category: string;
-    fileName: string;
-  };
-  likes: number;
-  dislikes: number;
-  credits: number;
-  user: UserProfile;
+    location: string,
+    category: string,
+    fileName: string,
+    status: string,
+    statusDate : number
+  },
+  likes: number,
+  dislikes: number,
+  credits: number,
+  user: UserProfile,
   currentUser : {
     userid : number,
     postLiked : boolean,
