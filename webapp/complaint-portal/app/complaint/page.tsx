@@ -7,21 +7,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {toast} from "react-toastify"
 import { useRouter } from "next/navigation";
+import { useAuthContext } from "@/lib/context/auth";
 
 export default function ComplaintReportForm() {
+  const storedUserId = useAuthContext().userProfile.userid;
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState<{
     aadhaar: string;
-    image: File | undefined;
+    image: File | null;
     title: string;
     description: string;
     location: string;
     category: string;
   }>({
     aadhaar: "-1",
-    image: undefined,
+    image: null,
     title: "",
     description: "",
     location: "",
@@ -30,7 +32,6 @@ export default function ComplaintReportForm() {
 
 
   useEffect(() => {
-    const storedUserId = Number(localStorage.getItem("userid") || "-1");
     setFormData((prev) => ({
       ...prev,
       aadhaar: String(storedUserId)
@@ -79,9 +80,6 @@ export default function ComplaintReportForm() {
       toast.error("Please fill all required fields.\n");
       return;
     }
-    if(!formData.image){
-      toast.error("Please Select an image")
-    }
 
     if (formData.aadhaar == "-1") {
       toast.error("User not logged in. Please log in first.");
@@ -112,8 +110,10 @@ export default function ComplaintReportForm() {
       const result = await response.json();
 
       if(result["post"] === "created"){
-        toast.success("Complaint Received Successfully.")
-        setTimeout( ()=>(useRouter().push("/complaint")), 500)
+        toast.success("Complaint Received Successfully.");
+        const form = e.target as HTMLFormElement
+        form.reset();
+        setImagePreview(null);
       }else if(result["user"] === "not-found"){
         toast.error("Invalid User ID. Please Login Again.")
         useRouter().push("/login");
@@ -128,7 +128,7 @@ export default function ComplaintReportForm() {
       // Reset form data
       setFormData({
         aadhaar: formData.aadhaar,
-        image: undefined,
+        image: null,
         title: "",
         description: "",
         location: "",
@@ -169,6 +169,7 @@ export default function ComplaintReportForm() {
                 readOnly // Aadhaar should not be edited directly by the user
               />
               <Input
+                id="image"
                 type="file"
                 name="image"
                 accept="image/*"

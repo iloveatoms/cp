@@ -94,14 +94,14 @@ app.post('/api/register',async(req,res)=>{
         })
 
   let createUser = {
-          userid: req.body.aadhaar,
+          userid: Number(req.body.aadhaar),
           name: req.body.name,
           email: "--",
           phone: "--",
-          aadhar: req.body.aadhaar.toString(),
+          aadhar: Number(req.body.aadhaar),
           age: 0,
-          followers: "",
-          following: "",
+          followers: 0,
+          following: 0,
           credits: 0,
           dateOfCreation: Date.now().toString(),
           profileUrl: "uploads/user.jpg",
@@ -124,6 +124,7 @@ app.post('/api/register',async(req,res)=>{
         res.status(200).json({status:data.user})
 
 })
+
 app.post(
   '/api/login',
   async (req, res) =>{
@@ -237,8 +238,6 @@ app.post(
    }
 )
 
-
-
 app.post('/api/getPosts',
   async (req, res) => {
       const response = await fetch(dbHost + "/getPosts", {
@@ -287,7 +286,6 @@ app.post('/api/updateLikes',
     });
 
     const data = await response.json();
-    console.log(req.body);
 
     res.contentType("application/json");
     res.status(200).json({
@@ -306,11 +304,6 @@ app.post('/api/updateLikes',
     });
   }
 )
-
-app.use((req, res) => {
-  res.status(404).redirect("/404.html");
-})
-
 const PORT = 5000
 const HOST = "0.0.0.0"
 app.listen(PORT, HOST,  () => {

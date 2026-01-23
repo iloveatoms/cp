@@ -75,3 +75,36 @@ BEGIN
     WHERE postid = OLD.postid;
 END;
 
+
+
+-- CREDITS
+CREATE TRIGGER update_user_credits_after_post_update
+AFTER UPDATE OF likes, dislikes ON post
+BEGIN
+    UPDATE user
+    SET credits =
+        MIN(
+            10,
+            MAX(
+                1,
+                ROUND(
+                    1 + 9.0 *
+                    (
+                        LOG(
+                            1 + (
+                                SELECT COALESCE(
+                                    MAX(SUM(likes - dislikes*0.8), 0),
+                                    0
+                                )
+                                FROM post
+                                WHERE post.userid = user.userid
+                            )
+                        )
+                        /
+                        LOG(1 + (SELECT COUNT(*) FROM user))
+                    )
+                )
+            )
+        )
+    WHERE user.userid = NEW.userid;
+END;

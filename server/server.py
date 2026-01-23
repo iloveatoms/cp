@@ -30,7 +30,7 @@ async def closeDatabase():
 
 
 ## Admin API
-async def index(request):
+async def index(request : web.Request):
     with open('admin.html') as f:
         INDEX_FILE = f.read()
 
@@ -39,14 +39,14 @@ async def index(request):
         content_type='text/html'
         )
 
-async def uploads(request):
+async def uploads(request : web.Request):
     path = request.match_info.get("path","admin.jpg")
 
     if not os.path.exists("../uploads/" + path):
         path = "admin.jpg"
     return web.FileResponse("../uploads/" + path)
 
-async def ooo(request):
+async def ooo(request : web.Request):
     data = await request.json()
 
     action = data["action"]
@@ -99,12 +99,19 @@ async def ooo(request):
                 meta["status"] = status
                 meta["statusDate"] = dateOfUpdate
 
-                print("UPDATE post",postid,status)
-                pp(meta)
-
                 await postsdb.setValue(postid, "meta", meta)
 
                 msg["status"] = "success"
+
+    elif action == "DELETE":
+        if table == "post":
+
+            postid = data.get("postid")
+
+            if postid:
+                await postsdb.deletePost(postid)
+                msg["status"] = "success"
+                print("Deleting post",postid)
 
     msg = json.dumps(msg)
     return web.Response(text=msg, content_type="application/json")
@@ -115,22 +122,20 @@ async def ooo(request):
 
 
 ## Web API
-async def register(request):
+async def register(request : web.Request):
     data = dict(await request.json())
 
-    if (await userdb.getUser(data["userid"])) is not None:
-        msg = {"user": "exists"}
-        return web.Response(text=json.dumps(msg), content_type="application/json", status=409)
+    msg = {"user": "exists"}
+    if (await userdb.getUser(data["userid"])) is None:
+        data["meta"]["password"] = database.hash_password(data["meta"]["password"])
 
-    data["meta"]["password"] = database.hash_password(data["meta"]["password"])
+        await userdb.createUser(**data)
+        print(":: user created ::", data["userid"])
+        msg = {"user": "created"}
 
-    # !!!
-    await userdb.createUser(**data)
+    return web.Response(text=json.dumps(msg), content_type="application/json")
 
-    msg = {"user": "created"}
-    return web.Response(text=json.dumps(msg), content_type="application/json", status=201)
-
-async def login(request):
+async def login(request : web.Request):
     data = dict(await request.json())
 
     userid = data.get("userid")
@@ -151,7 +156,7 @@ async def login(request):
 
 
 
-async def updateUser(request):
+async def updateUser(request : web.Request):
     data = dict(await request.json())
     userid = data.pop("userid", None)
 
@@ -171,7 +176,7 @@ async def updateUser(request):
     )
 
 
-async def createPost(request):
+async def createPost(request : web.Request):
     data = await request.json()
     data = dict(data)
 
@@ -186,7 +191,7 @@ async def createPost(request):
 
     return web.Response(text=msg, content_type="application/json")
 
-async def updateLikes(request):
+async def updateLikes(request : web.Request):
     data = await request.json()
 
     accessUserId = data["userid"]
@@ -215,7 +220,7 @@ async def updateLikes(request):
 
 
 
-async def getUserProfile(request):
+async def getUserProfile(request : web.Request):
     data = await request.json()
     data = dict(data)
 
@@ -235,20 +240,23 @@ async def getUserProfile(request):
     msg = json.dumps(msg)
     return web.Response(text=msg, content_type="application/json")
 
-async def getPosts(request):
+async def getPosts(request : web.Request):
     data = await request.json()
     data = dict(data)
-    pp(data)
 
     accessUserId = data["userid"]
-    postedBy = data["postUser"]
-    postCount = data["count"]
+    postid = data.get("postid",None)
+    postedBy = data.get("postUser", None)
+    lbound = data.get("lbound", None)
+    rbound = data.get("rbound", None)
+    sortBy = data.get("sortBy", None)
 
-    pp(data)
-    if postedBy == "*":
-        posts =  (await postsdb.getAllPosts() )[:postCount]
+    if postid:
+        posts = [(await postsdb.getPost(postid))]
+    elif postedBy == "*":
+        posts =  (await postsdb.getAllPosts() )[lbound:rbound]
     else:
-        posts = (await postsdb.getAllPosts(postedBy) )[:postCount]
+        posts = (await postsdb.getAllPosts(postedBy) )[lbound:rbound]
 
     for i in range(len(posts)):
         postedUserProfile = await userdb.getUser(posts[i]["userid"])
@@ -281,9 +289,6 @@ async def getPosts(request):
     return web.Response(text=posts, content_type="application/json")
 
 
-
-
-    # Server API
 app = web.Application()
 app.add_routes([
     # ADMIN

@@ -5,8 +5,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "react-toastify"
+import { useAuthContext } from "@/lib/context/auth";
 
 export default function RegisterPage() {
+  const {userProfile, setUserProfile} = useAuthContext();
   const [form, setForm] = useState({
     name: "",
     aadhaar: "",
@@ -39,23 +41,31 @@ export default function RegisterPage() {
           password: form.password,
           aadhaar: form.aadhaar,
         }),
-      })
+      });
 
       const data = await res.json();
+      console.log(data);
       if (data.status === "created") {
-        localStorage.setItem("userid", form.aadhaar)
-        toast.success("Registered successfully ")
-        setTimeout(()=>{window.location.href = redirect},1500)
-      } else if (data.status === "exists") {
-        toast.error("User already exists")
+
+        localStorage.setItem("userid", form.aadhaar);
+        setUserProfile(
+          {
+            ...userProfile,
+            userid : Number(form.aadhaar)
+          }
+        );
+
+        toast.success("Registered successfully ");
+        setTimeout(()=>{window.location.href = redirect},1500);
       }
-    } catch {
-      toast.error("Registration failed")
+      else if (data.status === "exists") { toast.error("User already exists") }
+    }
+     catch (err) { console.log(err) ; toast.error("Registration failed")
     }
   }
 
   return (
-    <div className="dark min-h-screen flex items-center justify-center bg-[#F7F9FA]">
+    <div className="dark min-h-screen flex items-center justify-center">
       <Card className="w-full max-w-md">
         <CardContent className="p-8 space-y-4">
           <h2 className="text-3xl font-semibold text-center">Register</h2>

@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "react-toastify"
+import { useAuthContext } from "@/lib/context/auth";
 import Link from "next/link"
 
 export default function LoginPage() {
+  const {userProfile, setUserProfile} = useAuthContext();
   const [aadhaar, setAadhaar] = useState("")
   const [password, setPassword] = useState("")
   const [redirect, setRedirect] = useState("/")
@@ -34,9 +36,16 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.authenticated === true) {
-        localStorage.setItem("userid", String(data.userid));
+        localStorage.setItem("userid", String(aadhaar));
+        setUserProfile(
+          {
+            ...userProfile,
+            userid : data.userid
+          }
+        );
         toast.success("Login successful");
         setTimeout( ()=> {window.location.replace(redirect) }, 1000 )
+
       } else if (data.authenticated === false)
         { toast.error(data.reason ? data.reason : "Wrong password. Try Again") }
       }

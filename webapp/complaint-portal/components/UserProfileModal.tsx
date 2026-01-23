@@ -1,18 +1,15 @@
 "use client";
 
-import { UserProfile, Report } from "@/lib/types";
-import ReportCard  from "./ReportCard";
+import { UserProfile } from "@/lib/types";
 import { Button } from "./ui/button";
-import { toast } from "react-toastify";
+import { toast, Zoom } from "react-toastify";
+import ReportPage from "./ReportPage";
 
 type Props = {
   user: UserProfile;
-  reports: Report[],
-  onVote: (updatedReport : Report, action: string) => void;
 };
 
-export default function UserProfileModal({ user, reports, onVote }: Props) {
-
+export default function UserProfileModal({ user }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex bg-black/30 backdrop-blur-sm dark">
 
@@ -31,36 +28,31 @@ export default function UserProfileModal({ user, reports, onVote }: Props) {
           <p><strong>Followers:</strong> {user.followers}</p>
           <p><strong>Following:</strong> {user.following}</p>
           <p><strong>Credits:</strong> {user.credits}</p>
-          <Button onClick={
-            ()=>{
-              localStorage.clear();
-              toast.info("Log-Out successful");
-              setTimeout(()=>{window.location.replace("/")},1500);
-            }}>
+          <Button onClick={logOuter}>
             Logout
           </Button>
         </div>
       </div>
 
-
-      <div className="w-[70%] p-8 bg-background">
-        <div className="h-full rounded-xl border border-dashed border-border flex items-center justify-center text-muted-foreground">
-        {
-          reports.length > 0
-          ? (
-            reports.map((report) => (
-              <ReportCard
-                key={report.postid}
-                report={report}
-                onVote={onVote}
-              />
-            )))
-          : ( <span>You have No Reports</span>)
-        }
-
-        </div>
+      <div className="w-[70%] p-8 dark rounded-2xl border-b-amber-500">
+        <ReportPage userid={user.userid} pageTitle="Your Reports" postedBy={user.userid} className="overflow-y-auto"/>
       </div>
     </div>
   );
 }
 
+function logOuter(e: React.MouseEvent<HTMLButtonElement>){
+  localStorage.clear()
+  toast.info('🦄 Log-Out Successful', {
+    position: "top-center",
+    autoClose: 2600,
+    hideProgressBar: true,
+    closeOnClick: true,
+    pauseOnHover: false,
+    draggable: true,
+    progress: undefined,
+    theme: "dark",
+    transition: Zoom,
+    });
+    setTimeout( ()=>window.location.replace("/") , 1000)
+}

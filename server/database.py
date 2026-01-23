@@ -59,7 +59,7 @@ class User(Connection):
         name: str,
         email: str = '',
         phone: str = '',
-        aadhar: str = '',
+        aadhar: int = 0,
         age: int = 0,
         followers: int = 0,
         following: int = 0,
@@ -184,7 +184,7 @@ class User(Connection):
     async def setPhone(self, userid: int, phone: str):
         await self.setValue(userid, "phone", phone)
 
-    async def setAadhar(self, userid: int, aadhar: str):
+    async def setAadhar(self, userid: int, aadhar: int):
         await self.setValue(userid, "aadhar", aadhar)
 
     async def setAge(self, userid: int, age: int):

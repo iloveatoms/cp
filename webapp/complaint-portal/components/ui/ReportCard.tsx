@@ -1,11 +1,15 @@
 "use client";
 
-import React from "react";
+
+import { useRouter } from "next/navigation";
 import { Report} from "@/lib/types"
+
 
 import ReviewedIcon from "@/components/svg/reviewed";
 import UnderReviewIcon from "@/components/svg/underReview";
 import RejectedIcon from "@/components/svg/rejected";
+import { toast } from "react-toastify";
+import { useEffect, useState } from "react";
 
 const statusConfig : any = {
   reviewed: {
@@ -26,11 +30,6 @@ const statusConfig : any = {
 };
 
 
-
-function linkLocation(gps : Report["meta"]["gps"]) : React.MouseEventHandler<HTMLSpanElement>{
-  return (e: React.MouseEvent<HTMLButtonElement>)=>{ window.open(`https://www.openstreetmap.org/?mlat=${gps.latitude}&mlon=${gps.longitude}`,"_blank") }
-}
-
 function formatRelativeDate(dateString: number) {
   const date = new Date(Number(dateString));
   const now = new Date();
@@ -47,15 +46,26 @@ function formatRelativeDate(dateString: number) {
   return ret
 }
 
-interface ReportCardProps {
-  report: Report;
-  onVote: (updatedReport : Report, action: string) => void;
+
+type ReportCardProps = {
+  report : Report,
+  updater? : (report : Report, action : string) => void
 }
 
-const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
+const ReportCard: React.FC<ReportCardProps> = ({ report, updater}) => {
+
+  const router = useRouter();
+  const [minimal, setMinimal] = useState<boolean>(false);
+
+  useEffect(()=>{
+    setMinimal( (updater === undefined) ? true : false )
+  })
+
   let action : string;
 
-  const handleLikes = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleLikes = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    if(report.currentUser.userid === -1){ toast.info("Please log in to vote."); return; }
+
     action = "neutral"; // as 0, then if wont execute -> action=Neutral
 
     const L = report.currentUser.postLiked;
@@ -89,13 +99,13 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
       (L===D) || (L!==C)
     )
     {
-    action = C ? "liked" : "disliked";
+      action = C ? "liked" : "disliked";
     }
-    onVote(report, action);
+    if(updater !== undefined) updater(report, action)
   };
 
   return (
-      <div className="bg-grey-400 p-4 rounded-lg shadow-md hover:shadow-lg hover:shadow-green-400 transition-all flex flex-col h-full">
+    <div className={"bg-[#000000] mx-6 my-2 p-4 md:p-2 lg:p-8 z-9999 rounded-lg shadow-md hover:shadow-lg hover:shadow-green-700 transition-all flex flex-col max-h-[646px] w-[380px]"}>
         {/* Image */}
         <img src={report.imageUrl}
           alt={report.title}
@@ -103,67 +113,79 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
         />
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-green-800 mb-1 line-clamp-2">
+        <h3 className="text-lg w-full font-semibold text-green-800 mb-1 line-clamp-2">
           {report.title}
         </h3>
 
         {/* Description */}
-        <p className="text-sm text-gray-600 mb-2 line-clamp-3 overflow-hidden border-green-900">
-          {report.text}
+        <p className="flex-1 w-full text-sm text-gray-600 mb-2 line-clamp-5 overflow-hidden"
+          dangerouslySetInnerHTML={{ __html : report.text }}>
+          {/* {report.text} */}
         </p>
 
         {/* Meta info */}
-        <p className="flex flex-col text-xs text-gray-500 mb-3">
-          <span
-            title={`Latitude : ${report.meta.gps.latitude} \n Longitude : ${report.meta.gps.longitude}`}
-            onClick={linkLocation(report.meta.gps)}
-            className="hover:cursor-pointer hover:underline hover:decoration-green-500">
-              <strong>Location:</strong> {report.meta.location}
-          </span>
-          <span
-            className="hover:cursor-pointer hover:underline hover:decoration-green-500">
-              <strong>Category:</strong> {report.meta.category}
-          </span>
-        </p>
-
-        {/* Likes / Dislikes */}
-        <div className="flex items-center justify-start gap-6 mb-4">
-          <div className="flex items-center gap-1">
-            <button
-              button-type="btnLike"
-              button-active={report.currentUser.postLiked}
-              onClick={handleLikes}
-            >
-              👍
-            </button>
+        {!minimal && (
+          <p className="flex flex-col text-xs text-gray-500 mb-3">
             <span
-              className="text-[#dddddd]"
-              style={{ color: report.currentUser.postLiked ? "green" : "initial" }}
-            >
-              {report.likes}
+              title={`Latitude : ${report.meta.gps?.latitude} \n Longitude : ${report.meta.gps?.longitude}`}
+              onClick=
+              {
+                ()=>{
+                router.push(`/map?latitude=${report.meta.gps?.latitude}&longitude=${report.meta.gps?.longitude}&z=19&i=${report.postid}`)
+                }
+              }
+              className="hover:cursor-pointer hover:underline hover:decoration-green-500">
+                <strong>Location:</strong> {report.meta.location}
             </span>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              button-type="btnDislike"
-              button-active={report.currentUser.postDisliked}
-              onClick={handleLikes}
-            >
-              👎
-            </button>
             <span
-              className="text-[#dddddd]"
-              style={{ color: report.currentUser.postDisliked ? "red" : "initial" }}
-            >
-              {report.dislikes}
+              className="hover:cursor-pointer hover:underline hover:decoration-green-500">
+                <strong>Category:</strong> {report.meta.category}
             </span>
-          </div>
-        </div>
+          </p>
+        )}
 
-        <div className="flex items-center justify-between mt-auto pt-3 gap-4">
+        {/* Likes */}
+        { !minimal && (
+          <div className="flex w-full items-center justify-start gap-6 mb-4">
+            <div className="flex items-center gap-1">
+              <button
+                button-type="btnLike"
+                button-active={report.currentUser.postLiked}
+                onClick={handleLikes}
+              >
+                👍
+              </button>
+              <span
+                className="text-[#dddddd]"
+                style={{ color: report.currentUser.postLiked ? "green" : "initial" }}
+              >
+                {report.likes}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                button-type="btnDislike"
+                button-active={report.currentUser.postDisliked}
+                onClick={handleLikes}
+              >
+                👎
+              </button>
+              <span
+                className="text-[#dddddd]"
+                style={{ color: report.currentUser.postDisliked ? "red" : "initial" }}
+              >
+                {report.dislikes}
+              </span>
+            </div>
+          </div>
+        )}
+
+
+        {/* User Profile & Status */}
+        <div className="flex w-full items-center justify-between border-t pt-3 gap-4">
           {/* User Profile (sticks to bottom) */}
-          <div className="flex items-center mt-auto pt-3 border-t">
+          <div className="flex items-center mt-auto pt-3">
             <img
               src={report.user.profileUrl}
               alt={report.user.name}
@@ -179,7 +201,8 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onVote }) => {
           </div>
 
           {/* Post Status (sticks to bottom) */}
-          <div title={statusConfig[report.meta.status].title + "\nMarked at:" + formatRelativeDate(report.meta.statusDate)}  className="flex items-center mt-auto pt-3">
+          <div className="flex items-center"
+            title={statusConfig[report.meta.status].title + "\nMarked at:" + formatRelativeDate(report.meta.statusDate)}  >
           {(() => {
               const status = statusConfig[report.meta.status];
               if (!status) return null;

@@ -1,26 +1,45 @@
 "use client";
 
+import { response } from "express";
 import { Report, UserProfile } from "./types";
-// import { getCurrentUser, setCurrentUser } from "@/lib/context"
+import { Response } from "./types";
 
 
-/**
- * @param userid null (Current User)
- * @param postedBy null (All Users)
- * @param count 10
- */
 export async function fetchReports(
-  userid : number | null = null,
-  postedBy : number | null = null,
-  count : number = 10
+  {
+    userid = -1,
+    postedBy,
+    count,
+    postid,
+    postids,
+    range,
+    sortBy,
+  }: {
+    userid?: number,
+    postedBy?: number | string,
+    count?: number,
+    postid?: number,
+    postids? : number,
+    range?: [number, number],
+    sortBy?: string
+  }
 ) : Promise<Report[]>
 {
   let reports : Report[] = [];
-  if(userid === null){
-    // userid = getCurrentUser().userid;
-  }
-  if(postedBy === null){
-    postedBy = -1;
+  if(postedBy === null){ postedBy = -1; }
+
+  let POST_DATA : any = { userid : userid,  }
+
+  if(postid){ POST_DATA.postid = postid; }
+
+  else{
+    if(count === undefined){ count = 10; }
+    if(range === undefined){ range = [0, count] }
+    if(postedBy === undefined){ postedBy = "*" }
+
+    POST_DATA.lbound = range[0];
+    POST_DATA.ubound = range[1];
+    POST_DATA.postedBy = postedBy;
   }
 
   try {
@@ -30,11 +49,7 @@ export async function fetchReports(
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            userid : userid,
-            postUser : (postedBy == -1) ? "*" : postedBy,
-            count : count
-            })
+          body: JSON.stringify(POST_DATA)
       });
 
     const data = await response.json();
@@ -54,7 +69,44 @@ export async function fetchReports(
 
 
 /**
- *
+ * @param updatedReport
+ * @param action
+ * @param userid
+ */
+export async function updateLikes(updatedReport : Report, action: string, userid : number)
+ : Promise<Response<Report>>
+  {
+  let myResponse : Response<Report> = { success : false , message : "error"}
+  try {
+    const response = await fetch("/api/updateLikes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userid: userid,
+        postid: updatedReport.postid,
+        action: action // "liked" or "disliked" or "neutral"
+      }),
+    });
+
+    if (!response.ok) { throw new Error("Server: Failed to update post."); }
+    const result = await response.json();
+    if(result){
+      updatedReport.currentUser = result.currentUser;
+      updatedReport.likes = result.post.likes;
+      updatedReport.dislikes = result.post.dislikes;
+
+      myResponse = { data : updatedReport, success : true }
+    }
+    return myResponse;
+  }
+  catch(err){ throw new Error("Network Error : Cannot update Likes.") }
+}
+
+
+
+/**
  * @param userid UserId of the profile to get
  * @returns
  */
@@ -63,9 +115,7 @@ export async function fetchUserProfile(
   cuserid : number | null
 ) : Promise<UserProfile>
 {
-  let UserProfile : UserProfile;
-  // number cuserid = getCurrentUser().userid;
-
+  let userProfile : UserProfile;
   try {
     const response = await fetch("/api/getUserProfile",
        {
@@ -80,7 +130,9 @@ export async function fetchUserProfile(
       });
 
     const data = await response.json();
-    return data;
+
+    userProfile = data;
+    return userProfile;
 
   }
   catch(err){
